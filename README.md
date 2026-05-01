@@ -1,106 +1,429 @@
-# Plantilla de proyecto para desarrollo asistido por agente
+# Talent Pool — AI-Powered Technical Assessment Platform
 
-Paquete genérico para iniciar una aplicación de software profesional, escalable, segura y mantenible, trabajando con Claude Code u otro agente de código.
+> **MVP for IBM Hackathon 2026** | Automated challenge generation and evaluation using LangChain4j
 
-**Stack**: Quarkus + Java 21 + LangChain4j + PostgreSQL + pgvector + React + TypeScript + Vite.
+**Stack**: Quarkus + Java 21 + LangChain4j + PostgreSQL + pgvector + React + TypeScript + Vite
 
-## Estructura
+---
+
+## Overview
+
+Talent Pool is an AI-powered platform that bridges the gap between technical education and employment by automating the generation and evaluation of technical challenges. It reduces operational overhead for educators, optimizes learning resources for students, and provides companies with access to pre-evaluated talent.
+
+### Core Value Proposition
+
+- **Automated end-to-end assessment**: LLM-powered challenge generation with hidden rubrics and static code analysis
+- **Collective knowledge repository**: Centralized AI queries to avoid resource duplication
+- **Direct education-to-employment bridge**: Pre-evaluated talent database with real-world workflow simulations
+- **Contextualized evaluation**: Open-book challenges that simulate actual work environments
+
+---
+
+## Problem Statement
+
+The disconnect between academic training and the job market creates:
+
+- **For educators**: Countless hours spent on manual grading and correction
+- **For students**: Isolated AI tool usage without collaborative learning opportunities
+- **For companies**: High onboarding costs (USD 10,000-30,000 per employee) and 3-6 month induction periods
+
+**Current alternatives** (HackerRank, Codility, traditional LMS) lack AI-powered automation and don't personalize content or connect education directly with job placement.
+
+---
+
+## MVP Scope (Hackathon)
+
+### Core Features
+
+**UC-001: Generate Technical Challenge**
+- Recruiter/educator inputs job parameters (role, technology, seniority)
+- System generates challenge + hidden rubric via LLM
+- Challenge becomes available for candidates
+
+**UC-002: Solve and Evaluate Challenge**
+- Candidate views challenge and develops solution in integrated editor
+- System evaluates via AI-powered static analysis
+- Returns score (0-100) and detailed feedback
+
+**UC-003: View Rankings and Reports**
+- Recruiter accesses dashboard with candidate rankings
+- Reviews submitted code and AI analysis
+- Makes selection decisions
+
+**UC-004: Browse Challenge Catalog**
+- Candidate accesses challenge catalog
+- Filters by technology/level
+- Initiates evaluation process
+
+### Technical Scope
+
+**Backend (Quarkus + LangChain4j)**
+- Automatic challenge generation via LLM
+- Hidden evaluation rubrics (JSONB storage)
+- Automated static code analysis
+- Detailed feedback with numerical scoring (0-100)
+
+**Frontend (React + TypeScript)**
+- Role-based dashboard (recruiters and candidates)
+- Challenge generation form
+- Integrated code editor (Monaco Editor)
+- Results and ranking views
+
+**Data Model**
+- Entities: Usuario, Puesto, Desafio, Evaluacion
+- PostgreSQL with JSONB support
+- pgvector extension (prepared for future RAG)
+
+---
+
+## Architecture
+
+### Style
+**Modular monolith** (backend) + **decoupled SPA** (frontend)
+
+### C4 Diagram - Level 2 (Containers)
 
 ```
-project-template/
-├── README.md                                      → guía de uso del paquete
-├── PRODUCT.md                                     → qué construimos y por qué
-├── ARCHITECTURE.md                                → cómo lo construimos (cerrado)
-├── ROADMAP.md                                     → fases 0 a 5 con DoD
-├── CONTRIBUTING.md                                → reglas para humanos y agentes
-├── CHANGELOG.md                                   → bitácora de versiones
-├── TECH_DEBT.md                                   → registro de deuda técnica
-├── sonar-project.properties                       → configuración de SonarQube
-├── .github/
-│   ├── pull_request_template.md                   → plantilla de PR
-│   └── workflows/
-│       ├── ci.yml                                 → maven verify, vitest, e2e, evals smoke, sonar
-│       ├── cd.yml                                 → deploy a staging y producción
-│       └── codeql.yml                             → análisis de seguridad SAST (Java + TS)
-└── docs/
-    ├── adr/
-    │   ├── 0000-template.md                       → plantilla de ADR
-    │   ├── 0001-stack-base.md                     → ADR: Quarkus + LangChain4j + React
-    │   ├── 0002-rag-vector-store.md               → ADR: pgvector + LangChain4j RAG
-    │   └── 0003-llm-evals.md                      → ADR: estrategia de evals
-    ├── uc/
-    │   ├── UC-template.md                         → plantilla de caso de uso (incluye sección LLM)
-    │   └── UC-001-registrar-usuario.md            → UC ejemplo completo
-    └── runbooks/
-        └── incident-template.md                   → plantilla operacional
+┌──────────────────────────────────────────────────────────────┐
+│                      Frontend Layer                          │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  React SPA (TypeScript + Vite)                     │     │
+│  │  - Recruiter panel (UC-001, UC-003)                │     │
+│  │  - Candidate panel (UC-002, UC-004)                │     │
+│  │  - Integrated code editor (Monaco)                 │     │
+│  └────────────────────────────────────────────────────┘     │
+└───────────────────────────┬──────────────────────────────────┘
+                            │ HTTPS / JSON (REST)
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│                      Backend Layer                           │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  Quarkus API (Java 21)                             │     │
+│  │  ┌──────────────────────────────────────────────┐ │     │
+│  │  │ API Layer (JAX-RS / RESTEasy Reactive)      │ │     │
+│  │  │  - /api/v1/puestos                           │ │     │
+│  │  │  - /api/v1/desafios                          │ │     │
+│  │  │  - /api/v1/evaluaciones                      │ │     │
+│  │  └──────────────────────────────────────────────┘ │     │
+│  │  ┌──────────────────────────────────────────────┐ │     │
+│  │  │ Service Layer (Use Cases)                    │ │     │
+│  │  │  - GenerarDesafioService (UC-001)            │ │     │
+│  │  │  - EvaluarSolucionService (UC-002)           │ │     │
+│  │  │  - ConsultarRankingService (UC-003)          │ │     │
+│  │  └──────────────────────────────────────────────┘ │     │
+│  │  ┌──────────────────────────────────────────────┐ │     │
+│  │  │ Infrastructure Layer                         │ │     │
+│  │  │  - LangChain4j AI Services                   │ │     │
+│  │  │  - Hibernate ORM with Panache                │ │     │
+│  │  │  - Flyway Migrations                         │ │     │
+│  │  └──────────────────────────────────────────────┘ │     │
+│  └────────────────────────────────────────────────────┘     │
+└───────────────┬──────────────────────┬───────────────────────┘
+                │                      │
+                ↓                      ↓
+    ┌───────────────────┐    ┌────────────────────┐
+    │  PostgreSQL 16    │    │  LLM Providers     │
+    │  + pgvector 0.7.x │    │  - OpenAI GPT-4    │
+    │                   │    │  - Anthropic Claude│
+    │  Entities:        │    │  - Ollama (dev)    │
+    │  - usuarios       │    │                    │
+    │  - puestos        │    │  via LangChain4j   │
+    │  - desafios       │    └────────────────────┘
+    │  - evaluaciones   │
+    └───────────────────┘
 ```
 
-## Cómo usar este paquete
+---
 
-1. Copiá el contenido de esta carpeta a la raíz de tu repositorio.
-2. Completá `PRODUCT.md` con la idea concreta de tu app.
-3. Revisá y ajustá `ARCHITECTURE.md` (especialmente §2 stack y §3 estructura).
-4. Ajustá `ROADMAP.md` a tus fases reales.
-5. Configurá los secrets de GitHub (ver abajo).
-6. Ajustá `sonar-project.properties` con tu `projectKey` y `organization`.
-7. Leé `CONTRIBUTING.md` y compartilo con el agente como contexto.
-8. Cada UC se desarrolla a partir de su archivo en `docs/uc/`.
+## Tech Stack (Closed Decisions)
 
-## Lo que el agente va a construir en fase 0
+### Backend
+- **JDK**: Eclipse Temurin 21 LTS
+- **Framework**: Quarkus 3.17.x
+- **LLM Toolkit**: LangChain4j (Quarkus extension)
+- **API**: RESTEasy Reactive (JAX-RS)
+- **ORM**: Hibernate ORM with Panache
+- **Migrations**: Flyway
+- **Database**: PostgreSQL 16 + pgvector 0.7.x
+- **Cache**: Redis 7.x
+- **Testing**: JUnit 5, AssertJ, Mockito, REST Assured, Testcontainers
+- **Observability**: Micrometer + OpenTelemetry
 
-A partir de este paquete, el agente puede generar:
+### Frontend
+- **Language**: TypeScript 5.x
+- **Framework**: React 18.x
+- **Build**: Vite 5.x
+- **Package Manager**: pnpm 9.x
+- **Router**: React Router 6.x
+- **State Management**: TanStack Query 5.x + Zustand/Context API
+- **Code Editor**: Monaco Editor
+- **Testing**: Vitest + Testing Library + Playwright
 
-- `backend/pom.xml` con Quarkus BOM, LangChain4j BOM y dependencias clave
-- `backend/src/main/resources/application.yml` con perfiles dev/test/prod
-- Estructura completa de paquetes Java según `ARCHITECTURE.md` §3
-- `frontend/package.json`, `vite.config.ts`, `tsconfig.json`
-- `infra/compose/docker-compose.yml` con Postgres+pgvector, Redis, Ollama
-- `infra/docker/Dockerfile.backend.jvm`, `Dockerfile.backend.native` (perfil avanzado), `Dockerfile.frontend`
-- Migración Flyway inicial vacía
-- Endpoints `/q/health/*` funcionando
-- Test mínimo `@QuarkusTest` y test mínimo Vitest
+### Infrastructure
+- **Containers**: Docker + docker-compose
+- **CI/CD**: GitHub Actions
+- **Static Analysis**: SonarQube/SonarCloud + GitHub CodeQL
+- **Cloud**: Render/Railway (MVP), AWS/GCP (production)
 
-## Secrets de GitHub a configurar
+---
 
-En `Settings → Secrets and variables → Actions`:
+## Project Structure
 
-| secret | uso | dónde se obtiene |
-|--------|-----|------------------|
-| `SONAR_TOKEN` | autenticación con Sonar | sonarcloud.io / sonarqube self-hosted |
-| `SONAR_HOST_URL` | URL de Sonar | `https://sonarcloud.io` o tu instancia |
-| `STAGING_DB_JDBC_URL` | conexión a BD de staging | tu proveedor cloud |
-| `STAGING_DB_USERNAME` / `STAGING_DB_PASSWORD` | credenciales BD staging | tu proveedor cloud |
-| `PROD_DB_JDBC_URL` | conexión a BD de producción | tu proveedor cloud |
-| `PROD_DB_USERNAME` / `PROD_DB_PASSWORD` | credenciales BD producción | tu proveedor cloud |
-| `LLM_API_KEY` | acceso al proveedor LLM | OpenAI / Anthropic / etc. |
+```
+/
+├── backend/                    # Quarkus API
+│   ├── src/main/java/com/talentpool/
+│   │   ├── api/               # JAX-RS resources (endpoints)
+│   │   ├── domain/            # Business entities
+│   │   ├── service/           # Use case implementations
+│   │   └── infrastructure/
+│   │       ├── persistence/   # Panache repositories
+│   │       ├── ai/            # LangChain4j AI services
+│   │       └── llm/           # LLM configuration
+│   └── src/main/resources/
+│       ├── application.yml
+│       ├── db/migration/      # Flyway scripts
+│       └── prompts/           # LLM prompt templates
+├── frontend/                   # React SPA
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── reclutador/   # Recruiter UI (UC-001, UC-003)
+│   │   │   └── candidato/    # Candidate UI (UC-002, UC-004)
+│   │   ├── pages/
+│   │   ├── hooks/
+│   │   └── services/         # API clients
+│   └── tests/
+├── infra/
+│   ├── docker/               # Dockerfiles
+│   └── compose/              # docker-compose files
+├── docs/
+│   ├── adr/                  # Architecture Decision Records
+│   ├── uc/                   # Use Cases
+│   └── runbooks/             # Operational guides
+└── product/
+    ├── PRODUCT.md            # Product definition
+    ├── ARCHITECTURE.md       # Technical architecture
+    └── ROADMAP.md            # Development phases
+```
 
-Más secrets (registry, cloud, etc.) según tus integraciones.
+---
 
-## Environments de GitHub a configurar
+## Getting Started
 
-En `Settings → Environments`:
+### Prerequisites
+- JDK 21 (Eclipse Temurin recommended)
+- Maven 3.9.x
+- Node.js 20.x + pnpm 9.x
+- Docker + docker-compose
+- PostgreSQL 16 (or use docker-compose)
 
-- **staging**: sin restricciones, deploy automático en push a `main`.
-- **production**: con `required reviewers` activado para forzar aprobación manual antes del deploy.
+### Local Development
 
-## Branch protection
+1. **Clone and setup**
+   ```bash
+   git clone <repository-url>
+   cd hackathon
+   ```
 
-En `Settings → Branches → Add rule` para `main`:
+2. **Start infrastructure**
+   ```bash
+   cd infra/compose
+   docker-compose up -d  # PostgreSQL + pgvector + Redis + Ollama
+   ```
 
-- Require pull request reviews before merging (al menos 1)
-- Require status checks to pass: `backend`, `frontend`, `e2e`, `sonar`, `docker-build`
-- Require branches to be up to date before merging
-- Do not allow bypassing the above settings
+3. **Backend**
+   ```bash
+   cd backend
+   mvn quarkus:dev  # Runs on http://localhost:8080
+   ```
 
-## Principios
+4. **Frontend**
+   ```bash
+   cd frontend
+   pnpm install
+   pnpm dev  # Runs on http://localhost:5173
+   ```
 
-- **Decisiones cerradas, no abiertas**. El agente no elige stack ni arquitectura: las ejecuta.
-- **Tests inmutables**. Si un test falla, se arregla el código, nunca el test.
-- **Tests LLM siempre con mock**. Llamadas reales solo en suite de evals controlada.
-- **Deuda registrada o no existe**. Atajo no documentado = bug futuro.
-- **Sin ambigüedad**. Cada UC tiene criterios verificables; cada PR tiene DoD.
-- **Seguridad y observabilidad desde día 1**. No son fases finales.
-- **Calidad medida, no asumida**. Linters, tests, evals y Sonar bloquean en CI.
-- **Costo controlado**. Cada UC con LLM declara su presupuesto de tokens y costo.
-# ibm-hackathon-talent-pool
-# ibm-hackathon-talent-pool
+### Environment Variables
+
+Create `.env` files or configure in `application.yml`:
+
+```yaml
+# Backend (application.yml)
+quarkus:
+  langchain4j:
+    openai:
+      api-key: ${LLM_API_KEY}
+  datasource:
+    jdbc:
+      url: ${DB_JDBC_URL:jdbc:postgresql://localhost:5432/talentpool}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+```
+
+---
+
+## Key Endpoints (MVP)
+
+### Challenge Management
+- `POST /api/v1/puestos` - Create job position
+- `POST /api/v1/desafios/generar` - Generate challenge (UC-001)
+- `GET /api/v1/desafios` - List challenges (UC-004)
+- `GET /api/v1/desafios/{id}` - Get challenge details
+
+### Evaluation
+- `POST /api/v1/evaluaciones` - Submit solution (UC-002)
+- `GET /api/v1/evaluaciones/{id}` - Get evaluation result
+- `GET /api/v1/evaluaciones/ranking/{desafioId}` - Get rankings (UC-003)
+
+### Health & Monitoring
+- `GET /q/health/live` - Liveness probe
+- `GET /q/health/ready` - Readiness probe
+- `GET /q/metrics` - Prometheus metrics
+
+---
+
+## Success Metrics
+
+### Product Metrics (Hackathon)
+- ≥ 50 challenges generated successfully
+- ≥ 100 completed evaluations
+- < 30s average challenge generation time
+- < 10s average evaluation time
+- ≥ 60% challenge completion rate
+- ≥ 7/10 user satisfaction (NPS)
+
+### Technical SLOs
+- 99% system availability
+- < 300ms p95 latency for CRUD endpoints
+- < 8s p95 latency for LLM challenge generation
+- < 5s p95 latency for code evaluation
+- < 1% 5xx error rate
+- < USD 5 cost per 100 evaluations
+
+### LLM-Specific Metrics
+- ≥ 85% challenge relevance quality
+- ≥ 80% evaluation accuracy (vs human evaluator)
+- ≥ 98% valid structured responses (JSON)
+- < 5% hallucination rate
+- ≥ 90% evaluation consistency
+
+---
+
+## Testing Strategy
+
+### Test Pyramid
+- **Unit tests**: 70% coverage (domain logic, services)
+- **Integration tests**: 20% coverage (@QuarkusTest with Testcontainers)
+- **E2E tests**: 10% coverage (Playwright for critical flows)
+- **LLM evals**: Dedicated suite with golden dataset (see ADR-0003)
+
+### Testing Rules
+- **Immutable tests**: If a test fails, fix the code, never the test
+- **LLM tests always mocked**: Real calls only in controlled eval suite
+- **No flaky tests**: Retry logic only for external dependencies
+
+### CI Pipeline
+```yaml
+# .github/workflows/ci.yml
+- Backend: mvn verify (unit + integration tests)
+- Frontend: pnpm test (Vitest + Playwright)
+- LLM Evals: Smoke tests only in CI
+- SonarQube: Quality gate enforcement
+- Docker: Build verification
+```
+
+---
+
+## GitHub Configuration
+
+### Required Secrets
+Configure in `Settings → Secrets and variables → Actions`:
+
+| Secret | Purpose | Source |
+|--------|---------|--------|
+| `SONAR_TOKEN` | SonarCloud authentication | sonarcloud.io |
+| `SONAR_HOST_URL` | Sonar instance URL | `https://sonarcloud.io` |
+| `LLM_API_KEY` | LLM provider access | OpenAI/Anthropic/etc. |
+| `STAGING_DB_*` | Staging database credentials | Cloud provider |
+| `PROD_DB_*` | Production database credentials | Cloud provider |
+
+### Environments
+- **staging**: Auto-deploy on push to `main`
+- **production**: Manual approval required
+
+### Branch Protection (main)
+- Require PR reviews (≥ 1 approval)
+- Require status checks: `backend`, `frontend`, `e2e`, `sonar`, `docker-build`
+- Require branches up to date
+- No bypass allowed
+
+---
+
+## Development Principles
+
+1. **Closed decisions, not open**: Agent executes architecture, doesn't choose it
+2. **Immutable tests**: Fix code, never tests
+3. **LLM tests always mocked**: Real calls only in eval suite
+4. **Documented debt or it doesn't exist**: Undocumented shortcuts = future bugs
+5. **No ambiguity**: Every UC has verifiable criteria, every PR has DoD
+6. **Security and observability from day 1**: Not final phases
+7. **Measured quality, not assumed**: Linters, tests, evals, and Sonar block in CI
+8. **Controlled costs**: Every LLM UC declares token budget and cost
+
+---
+
+## Documentation
+
+- **Product Definition**: [product/PRODUCT.md](product/PRODUCT.md)
+- **Architecture**: [product/ARCHITECTURE.md](product/ARCHITECTURE.md)
+- **Roadmap**: [product/ROADMAP.md](product/ROADMAP.md)
+- **Use Cases**: [docs/uc/](docs/uc/)
+- **ADRs**: [docs/adr/](docs/adr/)
+- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- **Tech Debt**: [TECH_DEBT.md](TECH_DEBT.md)
+
+---
+
+## Roadmap
+
+### Phase 0: MVP (Hackathon - 48-72h)
+- ✅ Core evaluation engine (UC-001 to UC-004)
+- ✅ 4 essential screens
+- ✅ Basic data model
+- ✅ LLM integration via LangChain4j
+
+### Phase 2: Academic Module (4-6 weeks)
+- Authentication system (OAuth, granular roles)
+- Collective AI query repository
+- Personalized study guides
+- Student collaboration features
+
+### Phase 3: Corporate Expansion (8-12 weeks)
+- Searchable talent database
+- Company-specific workflow simulators
+- ATS integrations
+- Advanced analytics
+
+### Phase 4: Monetization (12-16 weeks)
+- Subscription system
+- Payment processing
+- Digital certificates
+- Premium challenge marketplace
+
+---
+
+## License
+
+[To be defined]
+
+---
+
+## Contact
+
+[To be defined]
+
+---
+
+**Built with ❤️ for IBM Hackathon 2026**
