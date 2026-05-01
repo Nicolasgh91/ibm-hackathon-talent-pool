@@ -29,7 +29,7 @@
                     ↓                ↓                ↓
             ┌───────────────┐ ┌──────────┐  ┌──────────────┐
             │ LLM Providers │ │PostgreSQL│  │ Email Service│
-            │(OpenAI/Claude)│ │+ pgvector│  │   (futuro)   │
+            │(OpenAI/Gemini)│ │+ pgvector│  │   (futuro)   │
             └───────────────┘ └──────────┘  └──────────────┘
 ```
 
