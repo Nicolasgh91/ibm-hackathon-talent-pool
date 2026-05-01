@@ -33,53 +33,68 @@ The disconnect between academic training and the job market creates:
 
 ## MVP Scope (Hackathon)
 
-### Core Use Cases
+### Use Case Overview
 
-The MVP implements **4 critical use cases** for the hackathon demo:
+The platform implements **22 use cases** organized into 6 functional areas. The MVP (Phase 1) focuses on **11 critical use cases** for the hackathon demo:
 
-| ID | Use Case | Priority | Actor |
-|----|----------|----------|-------|
-| **UC-001** | Generar desafío técnico automatizado | Crítica | Reclutador/Docente |
-| **UC-002** | Resolver desafío y evaluar mediante análisis estático | Crítica | Candidato/Alumno |
-| **UC-003** | Visualizar ranking de candidatos y reportes de evaluación | Crítica | Reclutador/Docente |
-| **UC-004** | Acceder y seleccionar desafíos por parte del candidato | Crítica | Candidato/Alumno |
+#### Phase 1 - MVP (Critical Use Cases)
 
-**UC-001: Generate Technical Challenge**
-- Recruiter/educator inputs job parameters (role, technology, seniority)
-- System generates challenge + hidden rubric via LLM (LangChain4j)
-- Challenge becomes available for candidates
-- **Output**: Challenge with structured rubric stored in JSONB
+**Identity & Onboarding**
+- **UC-001**: Registrar usuario - Create account with email verification
+- **UC-002**: Iniciar sesión - Authenticate and obtain access tokens
+- **UC-003**: Completar perfil tras primer login - Complete profile wizard with role selection
 
-**UC-002: Solve and Evaluate Challenge**
-- Candidate views challenge and develops solution in integrated editor
-- System evaluates via AI-powered static analysis
-- Returns score (0-100) and detailed feedback with multi-dimensional breakdown
-- **Output**: Evaluation with score, feedback, and dimension analysis
+**Organization Management**
+- **UC-004**: Crear organización - Create company or educational institution
 
-**UC-003: View Rankings and Reports**
-- Recruiter accesses dashboard with candidate rankings by challenge
-- Reviews submitted code and AI analysis
-- Filters by score, technology, and seniority
-- Makes selection decisions based on objective metrics
+**Corporate Side (Recruiters)**
+- **UC-006**: Crear puesto laboral - Register job position
+- **UC-007**: Generar desafío técnico desde un puesto - AI-powered challenge generation via LangChain4j
+- **UC-008**: Confirmar o regenerar desafío propuesto - Review and refine generated challenges
+- **UC-009**: Invitar candidato a un desafío - Send challenge invitations to candidates
+- **UC-010**: Ver ranking de candidatos - View candidate rankings and metrics
+- **UC-011**: Ver detalle de evaluación de un candidato - Review detailed evaluation reports
 
-**UC-004: Browse Challenge Catalog**
-- Candidate accesses challenge catalog
-- Filters by technology/level/context (corporate, academic, public)
-- Selects challenge and initiates evaluation process
-- Tracks personal progress and historical evaluations
+**Candidate/Student Side**
+- **UC-016**: Aceptar invitación y acceder al desafío - Accept invitation and access challenge
+- **UC-017**: Resolver desafío - Solve challenge in integrated editor with AI evaluation
+- **UC-018**: Ver feedback de evaluación propia - View detailed feedback and scoring
 
-### Planned Use Cases (Post-MVP)
+#### Phase 2 - Academic Module (High Priority)
 
-| ID | Use Case | Priority | Phase |
-|----|----------|----------|-------|
-| UC-005 | Registrar usuario (reclutador/candidato) | Alta | 2 |
-| UC-006 | Iniciar sesión y gestión de perfiles | Alta | 2 |
-| UC-007 | Centralizar consultas a IA (repositorio colectivo) | Alta | 2 |
-| UC-008 | Generar guías de estudio personalizadas | Media | 2 |
-| UC-009 | Filtrar base de talento por tecnología y puntaje | Media | 3 |
-| UC-010 | Crear simuladores de flujos de trabajo empresariales | Media | 3 |
-| UC-011 | Emitir certificados digitales de finalización | Baja | 4 |
-| UC-012 | Sistema de suscripciones y pagos | Baja | 4 |
+**Academic Side (Educators)**
+- **UC-012**: Crear curso - Create academic course
+- **UC-013**: Inscribir alumnos a un curso - Enroll students in courses
+- **UC-014**: Generar desafío para curso - Generate challenges for academic context
+- **UC-015**: Escribir recomendación a un alumno - Write student recommendations
+
+**Organization & Talent Management**
+- **UC-005**: Invitar miembro a organización con rol - Invite members with specific roles
+- **UC-019**: Gestionar visibilidad en el pool de talento - Manage talent pool visibility
+- **UC-020**: Aceptar o rechazar recomendación recibida - Accept/reject recommendations
+
+**Collaborative Learning (LLM Repository)**
+- **UC-021**: Hacer consulta a LLM en contexto de curso - Make AI queries in course context
+- **UC-022**: Votar consulta del repositorio - Vote on shared AI queries
+
+### Core MVP Flows
+
+**Flow 1: Recruiter Creates Challenge**
+1. Recruiter creates organization (UC-004) and job position (UC-006)
+2. System generates AI-powered challenge from job parameters (UC-007)
+3. Recruiter reviews and confirms challenge (UC-008)
+4. Recruiter invites candidates (UC-009)
+
+**Flow 2: Candidate Solves Challenge**
+1. Candidate registers (UC-001) and completes profile (UC-003)
+2. Candidate accepts invitation (UC-016)
+3. Candidate solves challenge in integrated editor (UC-017)
+4. System evaluates via LangChain4j and returns detailed feedback (UC-018)
+
+**Flow 3: Recruiter Reviews Results**
+1. Recruiter views candidate rankings (UC-010)
+2. Recruiter reviews detailed evaluations and code (UC-011)
+3. Recruiter makes hiring decisions based on objective metrics
 
 ### Technical Scope
 
@@ -97,11 +112,20 @@ The MVP implements **4 critical use cases** for the hackathon demo:
 
 **Data Model**
 - **20 tables** organized in 7 domains (see `product/DATABASE.md` for complete schema)
-- **MVP Core**: 8 tables (usuarios, organizaciones, membresias, puestos, desafios, asignaciones_desafio, evaluaciones, prompt_versiones)
-- PostgreSQL 16 with JSONB support for structured data (rubrics, feedback)
-- pgvector 0.7.x extension (prepared for future RAG)
+- **MVP Core (Phase 1)**: 8 essential tables
+  - `usuarios` - User accounts with authentication
+  - `organizaciones` - Companies and educational institutions
+  - `membresias` - User-organization relationships with roles (OWNER, ADMIN, RECLUTADOR, DOCENTE, ALUMNO)
+  - `puestos` - Job positions with technology and seniority
+  - `desafios` - AI-generated technical challenges with hidden rubrics
+  - `asignaciones_desafio` - Challenge invitations to candidates
+  - `evaluaciones` - Challenge evaluations with AI feedback and scoring
+  - `prompt_versiones` - Versioned LLM prompts for auditability and A/B testing
+- **Phase 2 Additions**: `cursos`, `inscripciones_curso`, `perfiles_talento`, `habilidades_perfil`, `recomendaciones`, `consultas_llm`, `votos_consulta`, `llamadas_llm`, `eventos_auditoria`
+- PostgreSQL 16 with JSONB support for structured AI outputs (rubrics, feedback, dimensions)
+- pgvector 0.7.x extension (prepared for RAG in Phase 3)
 - Multi-tenant architecture via `organizacion_id`
-- UUID v7 identifiers for time-ordered IDs
+- UUID v7 identifiers for time-ordered IDs with embedded timestamps
 
 ---
 
@@ -303,21 +327,44 @@ quarkus:
 
 ## Key Endpoints (MVP)
 
-### Challenge Management
-- `POST /api/v1/puestos` - Create job position
-- `POST /api/v1/desafios/generar` - Generate challenge (UC-001)
-- `GET /api/v1/desafios` - List challenges (UC-004)
-- `GET /api/v1/desafios/{id}` - Get challenge details
+### Authentication & Identity (UC-001, UC-002, UC-003)
+- `POST /api/v1/auth/register` - Register new user with email verification
+- `POST /api/v1/auth/login` - Authenticate and obtain JWT tokens
+- `POST /api/v1/auth/refresh` - Refresh access token
+- `PATCH /api/v1/usuarios/{id}/perfil` - Complete user profile
 
-### Evaluation
-- `POST /api/v1/evaluaciones` - Submit solution (UC-002)
-- `GET /api/v1/evaluaciones/{id}` - Get evaluation result
-- `GET /api/v1/evaluaciones/ranking/{desafioId}` - Get rankings (UC-003)
+### Organization Management (UC-004, UC-005)
+- `POST /api/v1/organizaciones` - Create organization (company or institution)
+- `GET /api/v1/organizaciones/{id}` - Get organization details
+- `POST /api/v1/organizaciones/{id}/invitaciones` - Invite member with role
+- `GET /api/v1/organizaciones/{id}/miembros` - List organization members
+
+### Job Positions & Challenges (UC-006, UC-007, UC-008)
+- `POST /api/v1/puestos` - Create job position
+- `GET /api/v1/puestos` - List positions
+- `POST /api/v1/desafios/generar` - Generate AI-powered challenge from position
+- `PUT /api/v1/desafios/{id}/confirmar` - Confirm or regenerate challenge
+- `GET /api/v1/desafios/{id}` - Get challenge details (rubric hidden for candidates)
+
+### Challenge Invitations (UC-009, UC-016)
+- `POST /api/v1/asignaciones` - Invite candidate to challenge
+- `GET /api/v1/asignaciones/mis-invitaciones` - List my pending invitations
+- `POST /api/v1/asignaciones/{id}/aceptar` - Accept challenge invitation
+
+### Evaluation & Solving (UC-017, UC-018)
+- `POST /api/v1/evaluaciones` - Submit solution for AI evaluation
+- `GET /api/v1/evaluaciones/{id}` - Get evaluation result with feedback
+- `GET /api/v1/evaluaciones/mis-evaluaciones` - List my evaluations
+
+### Rankings & Reports (UC-010, UC-011)
+- `GET /api/v1/evaluaciones/ranking/{desafioId}` - Get candidate rankings by challenge
+- `GET /api/v1/evaluaciones/{id}/detalle-reclutador` - Get detailed evaluation (recruiter view with rubric)
 
 ### Health & Monitoring
 - `GET /q/health/live` - Liveness probe
 - `GET /q/health/ready` - Readiness probe
 - `GET /q/metrics` - Prometheus metrics
+- `GET /q/openapi` - OpenAPI 3.0 specification
 
 ---
 
@@ -413,43 +460,97 @@ Configure in `Settings → Secrets and variables → Actions`:
 
 ## Documentation
 
-- **Product Definition**: [product/PRODUCT.md](product/PRODUCT.md) - Complete product vision, use cases, and metrics
-- **Architecture**: [product/ARCHITECTURE.md](product/ARCHITECTURE.md) - Technical architecture and stack decisions
-- **Database Schema**: [product/DATABASE.md](product/DATABASE.md) - Complete 20-table schema with all constraints and rules
-- **Roadmap**: [product/ROADMAP.md](product/ROADMAP.md) - Development phases and milestones
-- **Use Cases**: [docs/uc/](docs/uc/) - Detailed use case specifications
-- **ADRs**: [docs/adr/](docs/adr/) - Architecture Decision Records
-- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
-- **Changelog**: [CHANGELOG.md](CHANGELOG.md) - Version history
-- **Tech Debt**: [TECH_DEBT.md](TECH_DEBT.md) - Known technical debt
+### Product & Strategy
+- **[product/PRODUCT.md](product/PRODUCT.md)** - Complete product vision with all 22 use cases, user personas, and success metrics
+- **[product/ROADMAP.md](product/ROADMAP.md)** - Development phases with Definition of Done for each milestone
+- **[product/DATABASE.md](product/DATABASE.md)** - Complete 20-table schema organized in 7 domains with constraints and business rules
+
+### Technical Architecture
+- **[product/ARCHITECTURE.md](product/ARCHITECTURE.md)** - Closed technical decisions, stack, folder structure, and patterns
+- **[docs/adr/](docs/adr/)** - Architecture Decision Records (ADR-0001: Stack, ADR-0002: RAG, ADR-0003: LLM Evals)
+- **[docs/uc/](docs/uc/)** - Detailed use case specifications with acceptance criteria and LLM considerations
+
+### Development & Operations
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines for humans and AI agents
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[TECH_DEBT.md](TECH_DEBT.md)** - Registered technical debt with priority and remediation plans
+- **[docs/runbooks/](docs/runbooks/)** - Operational runbooks for incident response
 
 ---
 
 ## Roadmap
 
-### Phase 0: MVP (Hackathon - 48-72h)
-- ✅ Core evaluation engine (UC-001 to UC-004)
-- ✅ 4 essential screens
-- ✅ Basic data model
-- ✅ LLM integration via LangChain4j
+### Phase 1: MVP (Hackathon - 48-72h)
+**11 Critical Use Cases** - Complete end-to-end flows for both recruiters and candidates
+
+**Identity & Onboarding** (UC-001 to UC-003)
+- User registration with email verification (argon2id password hashing)
+- JWT-based authentication (access + refresh tokens)
+- Profile completion wizard with role selection
+
+**Organization & Job Management** (UC-004, UC-006)
+- Create organizations (companies/institutions)
+- Create job positions with technology and seniority
+
+**AI-Powered Challenge Generation** (UC-007, UC-008)
+- Generate challenges from job parameters via LangChain4j
+- Confirm or regenerate with versioned prompts
+- Hidden rubrics stored in JSONB
+
+**Challenge Assignment & Solving** (UC-009, UC-016, UC-017, UC-018)
+- Invite candidates to challenges
+- Accept invitations and access challenges
+- Solve in integrated Monaco editor
+- AI-powered evaluation with detailed feedback
+
+**Recruiter Analytics** (UC-010, UC-011)
+- View candidate rankings by challenge
+- Review detailed evaluations with code and rubric analysis
+
+**Technical Deliverables**
+- 8-table PostgreSQL schema with multi-tenancy
+- Quarkus backend with LangChain4j integration
+- React frontend with Monaco editor
+- Full CI/CD pipeline with quality gates
 
 ### Phase 2: Academic Module (4-6 weeks)
-- Authentication system (OAuth, granular roles)
-- Collective AI query repository
-- Personalized study guides
-- Student collaboration features
+**11 Additional Use Cases** - Expand to educational institutions
+
+**Academic Features** (UC-012 to UC-015)
+- Course creation and student enrollment
+- Generate challenges for academic context
+- Teacher recommendations for students
+
+**Enhanced Organization** (UC-005)
+- Invite members with granular roles (DOCENTE, ALUMNO, RECLUTADOR, etc.)
+
+**Talent Pool Management** (UC-019, UC-020)
+- Manage visibility in talent pool
+- Accept/reject recommendations
+
+**Collaborative Learning** (UC-021, UC-022)
+- Centralized LLM query repository per course
+- Vote on shared queries to surface best answers
+- Reduce token costs through query deduplication
+
+**Technical Additions**
+- 12 additional tables (cursos, perfiles_talento, consultas_llm, etc.)
+- RAG implementation with pgvector for context-aware responses
+- Advanced analytics dashboard for educators
 
 ### Phase 3: Corporate Expansion (8-12 weeks)
-- Searchable talent database
+- Searchable talent database with advanced filters
 - Company-specific workflow simulators
-- ATS integrations
-- Advanced analytics
+- ATS integrations (Greenhouse, Lever, BambooHR)
+- Advanced analytics and reporting
+- API for third-party integrations
 
-### Phase 4: Monetization (12-16 weeks)
-- Subscription system
-- Payment processing
-- Digital certificates
+### Phase 4: Monetization & Scale (12-16 weeks)
+- Subscription tiers (Free, Pro, Enterprise)
+- Payment processing (Stripe/MercadoPago)
+- Digital certificate issuance with blockchain verification
 - Premium challenge marketplace
+- White-label solutions for enterprises
 
 ---
 
