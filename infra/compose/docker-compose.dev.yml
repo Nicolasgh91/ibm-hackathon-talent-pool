@@ -1,0 +1,135 @@
+# =============================================================================
+# Docker Compose - Development Services (Manual Fallback)
+# =============================================================================
+# Use this if you cannot use Quarkus Dev Services
+# Start with: docker-compose -f infra/compose/docker-compose.dev.yml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL 16 with pgvector
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: talentpool-postgres-dev
+    environment:
+      POSTGRES_DB: talentpool_dev
+      POSTGRES_USER: talentpool
+      POSTGRES_PASSWORD: talentpool_dev_pass
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../backend/src/main/resources/db/dev-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=8MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talentpool -d talentpool_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - talentpool-network
+  
+  # Redis 7
+  redis:
+    image: redis:7-alpine
+    container_name: talentpool-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - talentpool-network
+  
+  # Ollama (Local LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: talentpool-ollama-dev
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - talentpool-network
+  
+  # Ollama Model Puller (runs once to download model)
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: talentpool-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama-data:/root/.ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for Ollama to be ready..."
+        sleep 5
+        echo "Pulling llama3.1 model..."
+        ollama pull llama3.1
+        echo "Model pulled successfully!"
+    networks:
+      - talentpool-network
+  
+  # pgAdmin (Optional - Database Management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: talentpool-pgadmin-dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@talentpool.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - talentpool-network
+    profiles:
+      - tools  # Only start with: docker-compose --profile tools up
+
+volumes:
+  postgres-data:
+    name: talentpool-postgres-data
+  redis-data:
+    name: talentpool-redis-data
+  ollama-data:
+    name: talentpool-ollama-data
+  pgadmin-data:
+    name: talentpool-pgadmin-data
+
+networks:
+  talentpool-network:
+    name: talentpool-network
+    driver: bridge
+
+# Made with Bob

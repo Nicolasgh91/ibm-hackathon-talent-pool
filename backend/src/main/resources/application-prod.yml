@@ -1,0 +1,173 @@
+# =============================================================================
+# Talent Pool - Production Profile (IBM Cloud)
+# =============================================================================
+# This profile is activated with QUARKUS_PROFILE=prod
+# All services are managed (PostgreSQL, Redis) or external (OpenAI)
+# =============================================================================
+
+quarkus:
+  # Dev Services DISABLED in production
+  devservices:
+    enabled: false
+  
+  # Production Database (IBM Cloud Databases for PostgreSQL)
+  datasource:
+    jdbc:
+      url: ${DB_JDBC_URL}
+      min-size: 10
+      max-size: 50
+      acquisition-timeout: 30s
+      background-validation-interval: 5m
+      idle-removal-interval: 10m
+      max-lifetime: 60m
+      leak-detection-interval: 10m
+      transaction-isolation-level: read-committed
+      enable-metrics: true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  
+  # Production Redis (IBM Cloud Databases for Redis)
+  redis:
+    hosts: ${REDIS_URL}
+    password: ${REDIS_PASSWORD}
+    ssl: true
+    timeout: 30s
+    max-pool-size: 50
+    max-pool-waiting: 100
+  
+  # Hibernate - Production settings
+  hibernate-orm:
+    log:
+      sql: false
+      bind-parameters: false
+    jdbc:
+      statement-batch-size: 50
+    fetch:
+      batch-size: 32
+    query:
+      query-plan-cache-max-size: 4096
+  
+  # Flyway - Production migration settings
+  flyway:
+    migrate-at-start: true
+    clean-at-start: false
+    clean-disabled: true
+    validate-on-migrate: true
+    baseline-on-migrate: false
+    out-of-order: false
+  
+  # Logging - Production settings
+  log:
+    level: INFO
+    category:
+      "com.talentpool": INFO
+      "io.quarkus": WARN
+      "org.hibernate": WARN
+      "org.flywaydb": INFO
+    console:
+      enable: true
+      format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"
+      json: true  # JSON logging for log aggregation
+      color: false
+  
+  # HTTP - Production settings
+  http:
+    port: ${PORT:8080}
+    host: 0.0.0.0
+    cors:
+      origins: ${CORS_ORIGINS}
+  
+  # Health checks - Limited details in production
+  smallrye-health:
+    ui:
+      enable: false
+  
+  # OpenTelemetry - Enabled in production
+  otel:
+    enabled: true
+    exporter:
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    service:
+      name: talent-pool-api
+      version: ${quarkus.application.version}
+    traces:
+      sampler: parentbased_traceidratio
+      sampler-arg: 0.1  # Sample 10% of traces
+  
+  # Metrics - Production configuration
+  micrometer:
+    enabled: true
+    export:
+      prometheus:
+        enabled: true
+        path: /q/metrics
+
+# =============================================================================
+# LangChain4j - Production Configuration
+# =============================================================================
+langchain4j:
+  # Use OpenAI in production
+  openai:
+    api-key: ${OPENAI_API_KEY}
+    base-url: https://api.openai.com/v1
+    timeout: 60s
+    max-retries: 3
+    log-requests: false
+    log-responses: false
+    chat-model:
+      model-name: gpt-4o-mini
+      temperature: 0.3
+      max-tokens: 2000
+  
+  # Ollama disabled in production
+  ollama:
+    base-url: ""
+
+# =============================================================================
+# Application - Production Overrides
+# =============================================================================
+app:
+  llm:
+    provider: openai
+    cost-per-1k-tokens:
+      input: 0.00015
+      output: 0.0006
+    budget:
+      daily-limit-usd: 100.0
+      alert-threshold-usd: 80.0
+      alert-email: ${ALERT_EMAIL}
+  
+  security:
+    password:
+      algorithm: argon2id
+      iterations: 3
+      memory-kb: 65536
+      parallelism: 4
+    rate-limiting:
+      enabled: true
+      requests-per-minute: 60
+      burst-size: 10
+  
+  email:
+    provider: smtp
+    smtp:
+      host: ${SMTP_HOST}
+      port: ${SMTP_PORT}
+      username: ${SMTP_USERNAME}
+      password: ${SMTP_PASSWORD}
+      tls: true
+  
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+  
+  features:
+    rag-enabled: false
+    code-execution: false
+    gamification: false
+    payments: false
+    analytics-dashboard: true
+    email-notifications: true
+    real-time-updates: false
+
+# Made with Bob
