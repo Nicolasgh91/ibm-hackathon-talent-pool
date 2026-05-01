@@ -385,11 +385,11 @@ Términos del dominio con definición canónica. Uso obligatorio en código y do
 ## 9. referencias
 
 - **Documentación técnica**: Ver `ARCHITECTURE.md` para decisiones de stack y patrones
+- **Modelo de datos**: Ver `DATABASE.md` para esquema completo de 20 tablas con constraints, índices y migraciones
 - **Roadmap**: Ver `ROADMAP.md` para fases detalladas y Definition of Done
-- **Casos de uso**: Ver `docs/uc/UC-001.md` a `UC-004.md` para flujos detallados
+- **Casos de uso**: Ver `docs/uc/UC-001.md` a `UC-012.md` para flujos detallados (MVP: UC-001 a UC-004)
 - **ADRs**: Ver `docs/adr/` para decisiones arquitectónicas (stack, RAG, evals)
 - **Pitch completo**: Ver `Talent pool app.md` para contexto de negocio extendido
-- **Modelo de datos**: Ver DER en `Talent pool app.md` líneas 182-229
 
 ---
 

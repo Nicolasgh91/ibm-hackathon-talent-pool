@@ -33,27 +33,53 @@ The disconnect between academic training and the job market creates:
 
 ## MVP Scope (Hackathon)
 
-### Core Features
+### Core Use Cases
+
+The MVP implements **4 critical use cases** for the hackathon demo:
+
+| ID | Use Case | Priority | Actor |
+|----|----------|----------|-------|
+| **UC-001** | Generar desafío técnico automatizado | Crítica | Reclutador/Docente |
+| **UC-002** | Resolver desafío y evaluar mediante análisis estático | Crítica | Candidato/Alumno |
+| **UC-003** | Visualizar ranking de candidatos y reportes de evaluación | Crítica | Reclutador/Docente |
+| **UC-004** | Acceder y seleccionar desafíos por parte del candidato | Crítica | Candidato/Alumno |
 
 **UC-001: Generate Technical Challenge**
 - Recruiter/educator inputs job parameters (role, technology, seniority)
-- System generates challenge + hidden rubric via LLM
+- System generates challenge + hidden rubric via LLM (LangChain4j)
 - Challenge becomes available for candidates
+- **Output**: Challenge with structured rubric stored in JSONB
 
 **UC-002: Solve and Evaluate Challenge**
 - Candidate views challenge and develops solution in integrated editor
 - System evaluates via AI-powered static analysis
-- Returns score (0-100) and detailed feedback
+- Returns score (0-100) and detailed feedback with multi-dimensional breakdown
+- **Output**: Evaluation with score, feedback, and dimension analysis
 
 **UC-003: View Rankings and Reports**
-- Recruiter accesses dashboard with candidate rankings
+- Recruiter accesses dashboard with candidate rankings by challenge
 - Reviews submitted code and AI analysis
-- Makes selection decisions
+- Filters by score, technology, and seniority
+- Makes selection decisions based on objective metrics
 
 **UC-004: Browse Challenge Catalog**
 - Candidate accesses challenge catalog
-- Filters by technology/level
-- Initiates evaluation process
+- Filters by technology/level/context (corporate, academic, public)
+- Selects challenge and initiates evaluation process
+- Tracks personal progress and historical evaluations
+
+### Planned Use Cases (Post-MVP)
+
+| ID | Use Case | Priority | Phase |
+|----|----------|----------|-------|
+| UC-005 | Registrar usuario (reclutador/candidato) | Alta | 2 |
+| UC-006 | Iniciar sesión y gestión de perfiles | Alta | 2 |
+| UC-007 | Centralizar consultas a IA (repositorio colectivo) | Alta | 2 |
+| UC-008 | Generar guías de estudio personalizadas | Media | 2 |
+| UC-009 | Filtrar base de talento por tecnología y puntaje | Media | 3 |
+| UC-010 | Crear simuladores de flujos de trabajo empresariales | Media | 3 |
+| UC-011 | Emitir certificados digitales de finalización | Baja | 4 |
+| UC-012 | Sistema de suscripciones y pagos | Baja | 4 |
 
 ### Technical Scope
 
@@ -70,9 +96,12 @@ The disconnect between academic training and the job market creates:
 - Results and ranking views
 
 **Data Model**
-- Entities: Usuario, Puesto, Desafio, Evaluacion
-- PostgreSQL with JSONB support
-- pgvector extension (prepared for future RAG)
+- **20 tables** organized in 7 domains (see `product/DATABASE.md` for complete schema)
+- **MVP Core**: 8 tables (usuarios, organizaciones, membresias, puestos, desafios, asignaciones_desafio, evaluaciones, prompt_versiones)
+- PostgreSQL 16 with JSONB support for structured data (rubrics, feedback)
+- pgvector 0.7.x extension (prepared for future RAG)
+- Multi-tenant architecture via `organizacion_id`
+- UUID v7 identifiers for time-ordered IDs
 
 ---
 
@@ -124,12 +153,21 @@ The disconnect between academic training and the job market creates:
     ┌───────────────────┐    ┌────────────────────┐
     │  PostgreSQL 16    │    │  LLM Providers     │
     │  + pgvector 0.7.x │    │  - OpenAI GPT-4    │
-    │                   │    │  - Anthropic Claude│
-    │  Entities:        │    │  - Ollama (dev)    │
-    │  - usuarios       │    │                    │
-    │  - puestos        │    │  via LangChain4j   │
-    │  - desafios       │    └────────────────────┘
+    │  + pgcrypto       │    │  - Anthropic Claude│
+    │  + citext         │    │  - Ollama (dev)    │
+    │                   │    │                    │
+    │  20 Tables:       │    │  via LangChain4j   │
+    │  - usuarios       │    └────────────────────┘
+    │  - organizaciones │
+    │  - membresias     │
+    │  - puestos        │
+    │  - desafios       │
+    │  - asignaciones   │
     │  - evaluaciones   │
+    │  - prompt_vers.   │
+    │  + 12 more...     │
+    │                   │
+    │  See DATABASE.md  │
     └───────────────────┘
 ```
 
@@ -375,14 +413,15 @@ Configure in `Settings → Secrets and variables → Actions`:
 
 ## Documentation
 
-- **Product Definition**: [product/PRODUCT.md](product/PRODUCT.md)
-- **Architecture**: [product/ARCHITECTURE.md](product/ARCHITECTURE.md)
-- **Roadmap**: [product/ROADMAP.md](product/ROADMAP.md)
-- **Use Cases**: [docs/uc/](docs/uc/)
-- **ADRs**: [docs/adr/](docs/adr/)
-- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
-- **Tech Debt**: [TECH_DEBT.md](TECH_DEBT.md)
+- **Product Definition**: [product/PRODUCT.md](product/PRODUCT.md) - Complete product vision, use cases, and metrics
+- **Architecture**: [product/ARCHITECTURE.md](product/ARCHITECTURE.md) - Technical architecture and stack decisions
+- **Database Schema**: [product/DATABASE.md](product/DATABASE.md) - Complete 20-table schema with all constraints and rules
+- **Roadmap**: [product/ROADMAP.md](product/ROADMAP.md) - Development phases and milestones
+- **Use Cases**: [docs/uc/](docs/uc/) - Detailed use case specifications
+- **ADRs**: [docs/adr/](docs/adr/) - Architecture Decision Records
+- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md) - Version history
+- **Tech Debt**: [TECH_DEBT.md](TECH_DEBT.md) - Known technical debt
 
 ---
 

@@ -75,12 +75,13 @@
     ┌───────────────────┐    ┌────────────────────┐
     │  PostgreSQL 16    │    │  LLM Providers     │
     │  + pgvector 0.7.x │    │  - OpenAI GPT-4    │
-    │                   │    │  - Anthropic Claude│
-    │  Entidades:       │    │  - Ollama (dev)    │
-    │  - usuarios       │    │                    │
-    │  - puestos        │    │  via LangChain4j   │
-    │  - desafios       │    └────────────────────┘
-    │  - evaluaciones   │
+    │  + pgcrypto       │    │  - Anthropic Claude│
+    │  + citext         │    │  - Ollama (dev)    │
+    │                   │    │                    │
+    │  20 Tablas:       │    │  via LangChain4j   │
+    │  Ver DATABASE.md  │    └────────────────────┘
+    │  para esquema     │
+    │  completo         │
     └───────────────────┘
 ```
 
@@ -311,210 +312,259 @@
 
 ## 4. modelo de datos
 
-### 4.1 entidades canónicas
+> **Referencia completa**: Ver `product/DATABASE.md` para el esquema detallado de 20 tablas con todas las reglas de integridad, constraints y estrategia de migraciones.
+
+### 4.1 visión general del esquema
+
+El sistema utiliza un modelo de datos multi-tenant con **20 tablas** organizadas en 7 dominios:
+
+| Dominio | Tablas | Propósito |
+|---------|--------|-----------|
+| **Identidad** | `usuarios`, `organizaciones`, `membresias` | Multi-tenancy y roles flexibles |
+| **Académico** | `cursos`, `inscripciones` | Gestión de cursos y alumnos |
+| **Corporativo** | `puestos` | Vacantes laborales |
+| **Núcleo** | `desafios`, `asignaciones_desafio`, `invitaciones_desafio`, `evaluaciones`, `evaluaciones_versiones`, `dimensiones_puntaje` | Motor de evaluación |
+| **Puente** | `recomendaciones` | Conexión educación-empleo |
+| **Pool** | `perfiles_talento`, `habilidades_perfil` | Base de talento |
+| **Colaboración** | `consultas_llm`, `votos_consulta` | Repositorio colectivo |
+| **Trazabilidad** | `prompt_versiones`, `llamadas_llm`, `eventos_auditoria` | Auditoría y reproducibilidad |
+
+### 4.2 entidades MVP (fase 0)
+
+Para el MVP del hackathon, se implementan **8 tablas core**:
 
 ```mermaid
 erDiagram
-    USUARIO {
+    USUARIOS {
         UUID id PK
-        String nombre
-        String email
-        String tipo_usuario "ENUM: RECLUTADOR, CANDIDATO"
-        DateTime created_at
-        DateTime updated_at
+        CITEXT email UK
+        VARCHAR nombre_completo
+        TEXT password_hash
+        BOOLEAN email_verificado
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
     }
     
-    PUESTO {
+    ORGANIZACIONES {
         UUID id PK
+        VARCHAR nombre
+        VARCHAR tipo "EMPRESA|INSTITUCION"
+        VARCHAR plan "FREE|PRO|ENTERPRISE"
+        VARCHAR dominio_email
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    
+    MEMBRESIAS {
+        UUID id PK
+        UUID usuario_id FK
+        UUID organizacion_id FK
+        VARCHAR rol "OWNER|RECLUTADOR|DOCENTE|ALUMNO|EMPLEADO|ADMIN"
+        VARCHAR estado "ACTIVA|SUSPENDIDA|REVOCADA"
+        TIMESTAMPTZ inicio
+        TIMESTAMPTZ fin
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    
+    PUESTOS {
+        UUID id PK
+        UUID organizacion_id FK
         UUID reclutador_id FK
-        String titulo_rol
-        String tecnologia_principal
-        String nivel_seniority "ENUM: JUNIOR, SEMI_SENIOR, SENIOR"
-        DateTime created_at
-        DateTime updated_at
+        VARCHAR titulo
+        VARCHAR tecnologia_principal
+        VARCHAR seniority "TRAINEE|JR|SSR|SR|LEAD"
+        TEXT descripcion
+        VARCHAR estado "BORRADOR|ABIERTO|PAUSADO|CERRADO"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
     }
     
-    DESAFIO {
+    DESAFIOS {
         UUID id PK
-        UUID puesto_id FK
-        Text enunciado_problema
+        UUID creador_usuario_id FK
+        UUID organizacion_id FK
+        UUID prompt_version_id FK
+        VARCHAR titulo
+        TEXT enunciado
         JSONB rubrica_oculta
-        DateTime fecha_generacion
-        DateTime created_at
-        DateTime updated_at
+        VARCHAR contexto_origen "CORPORATIVO|ACADEMICO|BIBLIOTECA"
+        VARCHAR tecnologia
+        VARCHAR seniority
+        INTEGER minutos_estimados
+        BOOLEAN es_publico
+        VARCHAR estado "BORRADOR|REVISION|ACTIVO|ARCHIVADO"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
     }
     
-    EVALUACION {
+    ASIGNACIONES_DESAFIO {
+        UUID id PK
+        UUID desafio_id FK
+        UUID puesto_id FK
+        UUID curso_id FK
+        VARCHAR tipo "PUESTO|CURSO|PUBLICO"
+        TIMESTAMPTZ fecha_apertura
+        TIMESTAMPTZ fecha_cierre
+        INTEGER max_intentos
+        TIMESTAMPTZ created_at
+    }
+    
+    EVALUACIONES {
         UUID id PK
         UUID desafio_id FK
         UUID candidato_id FK
-        Text codigo_entregado
-        Integer puntaje_obtenido "0-100"
+        UUID asignacion_id FK
+        TEXT codigo_entregado
+        VARCHAR lenguaje
+        DECIMAL puntaje_total
         JSONB reporte_feedback
-        DateTime fecha_entrega
-        DateTime created_at
-        DateTime updated_at
+        VARCHAR contexto "CORPORATIVO|ACADEMICO|AUTOEVALUACION"
+        INTEGER minutos_empleados
+        VARCHAR estado "BORRADOR|EN_CURSO|ENTREGADA|EVALUADA|ANULADA"
+        TIMESTAMPTZ inicio
+        TIMESTAMPTZ entrega
+        TIMESTAMPTZ evaluado_en
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    
+    PROMPT_VERSIONES {
+        UUID id PK
+        VARCHAR nombre
+        VARCHAR version_semver
+        TEXT plantilla
+        JSONB variables_esperadas
+        VARCHAR estado "EXPERIMENTAL|ACTIVA|DEPRECADA"
+        TEXT notas_cambio
+        TIMESTAMPTZ created_at
     }
 
-    USUARIO ||--o{ PUESTO : "crea (como reclutador)"
-    USUARIO ||--o{ EVALUACION : "realiza (como candidato)"
-    PUESTO ||--|{ DESAFIO : "genera"
-    DESAFIO ||--o{ EVALUACION : "recibe"
+    USUARIOS ||--o{ MEMBRESIAS : "tiene"
+    ORGANIZACIONES ||--o{ MEMBRESIAS : "contiene"
+    ORGANIZACIONES ||--o{ PUESTOS : "publica"
+    USUARIOS ||--o{ PUESTOS : "crea (reclutador)"
+    USUARIOS ||--o{ DESAFIOS : "crea"
+    ORGANIZACIONES ||--o{ DESAFIOS : "posee"
+    PROMPT_VERSIONES ||--o{ DESAFIOS : "genera"
+    DESAFIOS ||--o{ ASIGNACIONES_DESAFIO : "se asigna en"
+    PUESTOS ||--o{ ASIGNACIONES_DESAFIO : "usa"
+    ASIGNACIONES_DESAFIO ||--o{ EVALUACIONES : "recibe"
+    DESAFIOS ||--o{ EVALUACIONES : "evalúa"
+    USUARIOS ||--o{ EVALUACIONES : "realiza (candidato)"
 ```
 
-#### Tabla USUARIO
-- **Propósito**: Almacena tanto reclutadores como candidatos
-- **Invariantes**:
-  - `email` debe ser único y válido
-  - `tipo_usuario` solo puede ser RECLUTADOR o CANDIDATO
-  - `created_at` es inmutable
-- **Estados**: Activo (por defecto en MVP, soft delete en fase 2)
+### 4.3 principios de diseño
 
-#### Tabla PUESTO
-- **Propósito**: Parámetros de entrada para generar desafíos
-- **Invariantes**:
-  - `reclutador_id` debe referenciar un usuario de tipo RECLUTADOR
-  - `nivel_seniority` solo puede ser JUNIOR, SEMI_SENIOR o SENIOR
-  - Un puesto puede tener múltiples desafíos generados
-- **Estados**: Activo, Archivado (fase 2)
+**Reglas universales** (aplican a TODA tabla):
+- **IDs**: UUID v7 generados por aplicación o `gen_random_uuid()` como fallback
+- **Timestamps**: `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` obligatorio; `updated_at` en tablas con cambios frecuentes
+- **Soft delete**: Solo donde está justificado funcionalmente (ej: `membresias.estado = REVOCADA`)
+- **Snake case**: Tablas en español plural, columnas en `snake_case`
+- **Charset**: UTF-8, timezone UTC para todos los timestamps
 
-#### Tabla DESAFIO
-- **Propósito**: Problema técnico generado por IA
-- **Invariantes**:
-  - `rubrica_oculta` debe ser JSON válido con estructura definida
-  - `enunciado_problema` no puede estar vacío
-  - Debe estar asociado a un puesto válido
-- **Estados**: Activo, Inactivo (fase 2)
-- **Estructura JSONB rubrica_oculta**:
+**Multi-tenancy**:
+- Tenancy lógica vía `organizacion_id` en tablas relevantes
+- Una sola BD multi-tenant (no schemas separados)
+- Row-Level Security (RLS) opcional para v2; en v1 se controla por capa de aplicación
+
+**Trazabilidad de LLM**:
+- Toda salida generada por LLM referencia su `prompt_version_id`
+- Todo lo que costó tokens registra una fila en `llamadas_llm`
+
+### 4.4 estructura JSONB clave
+
+**`desafios.rubrica_oculta`** (nunca visible al candidato):
 ```json
 {
-  "criterios": [
+  "version_rubrica": "1.0",
+  "dimensiones": [
     {
-      "nombre": "Lógica y corrección",
-      "peso": 40,
-      "descripcion": "Evalúa si la solución resuelve el problema correctamente"
+      "nombre": "LOGICA",
+      "peso": 0.4,
+      "criterios": ["resuelve el caso base", "maneja edge cases"]
     },
     {
-      "nombre": "Eficiencia algorítmica",
-      "peso": 30,
-      "descripcion": "Evalúa complejidad temporal y espacial"
+      "nombre": "EFICIENCIA",
+      "peso": 0.3,
+      "criterios": ["complejidad temporal apropiada"]
     },
     {
-      "nombre": "Buenas prácticas",
-      "peso": 30,
-      "descripcion": "Evalúa legibilidad, nomenclatura, estructura"
+      "nombre": "ESTILO",
+      "peso": 0.2,
+      "criterios": ["nombres descriptivos", "estructura clara"]
+    },
+    {
+      "nombre": "PRACTICAS",
+      "peso": 0.1,
+      "criterios": ["manejo de errores", "tests"]
     }
   ],
-  "casos_prueba": [
-    {"entrada": "...", "salida_esperada": "..."}
+  "puntaje_maximo": 100
+}
+```
+
+**`evaluaciones.reporte_feedback`**:
+```json
+{
+  "version_evaluador": "1.2.0",
+  "resumen": "Solución correcta con buena estructura, falta optimización en X",
+  "puntos_fuertes": ["Lógica clara", "Manejo de errores robusto"],
+  "puntos_a_mejorar": ["Complejidad O(n²) puede optimizarse a O(n)"],
+  "ejemplos_codigo_mejor": [
+    {"linea": 42, "sugerencia": "Usar dict comprehension en lugar de loop"}
   ]
 }
 ```
 
-#### Tabla EVALUACION
-- **Propósito**: Registro de solución y resultado de análisis IA
-- **Invariantes**:
-  - `candidato_id` debe referenciar un usuario de tipo CANDIDATO
-  - `puntaje_obtenido` debe estar entre 0 y 100
-  - `codigo_entregado` no puede estar vacío
-  - `reporte_feedback` debe ser JSON válido
-- **Estados**: Pendiente (fase 2), Completada
-- **Estructura JSONB reporte_feedback**:
-```json
-{
-  "puntaje_total": 85,
-  "desglose": [
-    {
-      "criterio": "Lógica y corrección",
-      "puntaje": 38,
-      "comentario": "La solución es correcta pero..."
-    }
-  ],
-  "puntos_fuertes": ["...", "..."],
-  "areas_mejora": ["...", "..."],
-  "sugerencias": ["...", "..."]
-}
-```
+### 4.5 reglas de integridad
 
-### 4.2 reglas de integridad
-- Claves foráneas con `ON DELETE CASCADE` para DESAFIO → PUESTO
-- Claves foráneas con `ON DELETE RESTRICT` para EVALUACION → DESAFIO (no borrar desafíos con evaluaciones)
-- Timestamps `created_at` y `updated_at` en toda tabla, manejados por Hibernate (`@CreationTimestamp`, `@UpdateTimestamp`)
-- Soft delete solo en fase 2+ con `deleted_at` nullable
-- IDs: UUID v7 generado por `gen_random_uuid()` desde Postgres
-- Snake_case en tablas y columnas
-- Tablas en plural: `usuarios`, `puestos`, `desafios`, `evaluaciones`
-- Índices obligatorios:
-  - `usuarios.email` (unique)
-  - `puestos.reclutador_id`
-  - `desafios.puesto_id`
-  - `evaluaciones.desafio_id`
-  - `evaluaciones.candidato_id`
-  - `evaluaciones.puntaje_obtenido` (para ranking)
+**Políticas de `ON DELETE`** (explícitas en todas las FK):
+- `CASCADE`: Cuando la entidad padre es dueña de los hijos (ej: `organizacion` → `membresias`)
+- `RESTRICT`: Cuando hay dependencias críticas (ej: `desafio` → `evaluaciones`)
+- `SET NULL`: Para referencias opcionales que deben preservarse (ej: `asignacion_id` en evaluaciones de autoevaluación)
 
-### 4.3 migraciones (Flyway)
+**Constraints CHECK**:
+- Todos los campos tipo string que son enums tienen CHECK constraints hasta migrar a tipos ENUM nativos
+- Validaciones de rangos numéricos (ej: `puntaje_total BETWEEN 0 AND 100`)
+- Validaciones de fechas (ej: `fecha_cierre > fecha_apertura`)
+
+**Índices obligatorios** (ver DATABASE.md §3 para lista completa):
+- Todos los campos de FK
+- Campos usados en WHERE frecuentes (`estado`, `es_publico`)
+- Campos de ordenamiento (`puntaje_total DESC`, `created_at DESC`)
+- GIN indexes en columnas JSONB para búsquedas
+
+### 4.6 migraciones (Flyway)
+
+**Estrategia**:
 - Toda alteración de esquema pasa por scripts Flyway en `db/migration/`
-- Nomenclatura: `V<n>__<descripcion_snake_case>.sql` (ej: `V1__create_initial_schema.sql`)
+- Nomenclatura: `V<n>__<descripcion_snake_case>.sql`
 - Nunca editar una migración mergeada; crear una nueva
 - Migraciones idempotentes y reversibles cuando sea posible
-- Migraciones grandes (backfills) en lotes y separadas de cambios de esquema
+- Backfills en migraciones separadas de cambios de esquema
 
-**Migración inicial (V1)**:
+**Orden propuesto para MVP** (ver DATABASE.md §6 para secuencia completa de 24 migraciones):
+```
+V1__create_extensions.sql                  -- pgcrypto, citext, pgvector
+V2__create_usuarios.sql
+V3__create_organizaciones.sql
+V4__create_membresias.sql
+V5__create_puestos.sql
+V8__create_prompt_versiones.sql            -- antes de desafios (FK)
+V9__create_desafios.sql
+V10__create_asignaciones_desafio.sql
+V12__create_evaluaciones.sql
+V22__seed_prompt_versiones_iniciales.sql   -- datos iniciales
+V23__create_triggers_updated_at.sql        -- triggers para updated_at
+```
+
+**Migración inicial de extensiones (V1)**:
 ```sql
--- V1__create_initial_schema.sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgvector"; -- para fase 2 RAG
-
-CREATE TYPE tipo_usuario_enum AS ENUM ('RECLUTADOR', 'CANDIDATO');
-CREATE TYPE nivel_seniority_enum AS ENUM ('JUNIOR', 'SEMI_SENIOR', 'SENIOR');
-
-CREATE TABLE usuarios (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    tipo_usuario tipo_usuario_enum NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE puestos (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    reclutador_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    titulo_rol VARCHAR(255) NOT NULL,
-    tecnologia_principal VARCHAR(100) NOT NULL,
-    nivel_seniority nivel_seniority_enum NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE desafios (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    puesto_id UUID NOT NULL REFERENCES puestos(id) ON DELETE CASCADE,
-    enunciado_problema TEXT NOT NULL,
-    rubrica_oculta JSONB NOT NULL,
-    fecha_generacion TIMESTAMP NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE evaluaciones (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    desafio_id UUID NOT NULL REFERENCES desafios(id) ON DELETE RESTRICT,
-    candidato_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    codigo_entregado TEXT NOT NULL,
-    puntaje_obtenido INTEGER NOT NULL CHECK (puntaje_obtenido >= 0 AND puntaje_obtenido <= 100),
-    reporte_feedback JSONB NOT NULL,
-    fecha_entrega TIMESTAMP NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_usuarios_email ON usuarios(email);
-CREATE INDEX idx_puestos_reclutador ON puestos(reclutador_id);
-CREATE INDEX idx_desafios_puesto ON desafios(puesto_id);
-CREATE INDEX idx_evaluaciones_desafio ON evaluaciones(desafio_id);
-CREATE INDEX idx_evaluaciones_candidato ON evaluaciones(candidato_id);
-CREATE INDEX idx_evaluaciones_puntaje ON evaluaciones(puntaje_obtenido DESC);
+-- V1__create_extensions.sql
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS "citext";     -- case-insensitive text
+CREATE EXTENSION IF NOT EXISTS "pgvector";   -- para RAG futuro
 ```
 
 ---
@@ -1026,3 +1076,18 @@ Lista de decisiones aún no tomadas. Cada una se cierra con un ADR antes de nece
 - [ ] estrategia de chat memory persistente (Postgres / Redis / in-memory por sesión)
 - [ ] envío de emails transaccionales
 - [ ] gateway de pagos (si aplica)
+
+
+---
+
+## 14. referencias
+
+- **Modelo de datos completo**: `product/DATABASE.md` - Esquema detallado de 20 tablas con constraints, índices y estrategia de migraciones
+- **Definición de producto**: `product/PRODUCT.md` - Casos de uso, métricas y alcance
+- **Roadmap**: `product/ROADMAP.md` - Fases de desarrollo y Definition of Done
+- **ADRs**: `docs/adr/` - Decisiones arquitectónicas documentadas
+  - ADR-0001: Stack base (Quarkus + LangChain4j)
+  - ADR-0002: Estrategia RAG y vector store
+  - ADR-0003: Estrategia de evaluación de LLMs
+- **Casos de uso**: `docs/uc/` - Especificaciones detalladas de UC-001 a UC-012
+- **Contribución**: `CONTRIBUTING.md` - Guías de desarrollo y convenciones
