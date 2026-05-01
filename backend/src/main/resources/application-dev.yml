@@ -1,0 +1,138 @@
+# =============================================================================
+# Talent Pool - Development Profile (Dev Services)
+# =============================================================================
+# This profile is automatically activated when running `mvn quarkus:dev`
+# Dev Services will automatically provision PostgreSQL, Redis, and Ollama
+# =============================================================================
+
+quarkus:
+  # Dev Services - Automatic Container Provisioning
+  devservices:
+    enabled: true
+  
+  # PostgreSQL Dev Services
+  datasource:
+    devservices:
+      enabled: true
+      image-name: pgvector/pgvector:pg16
+      port: 5432
+      db-name: talentpool_dev
+      username: talentpool
+      password: talentpool_dev_pass
+      init-script-path: db/dev-init.sql
+      volumes:
+        "/var/lib/postgresql/data": pgdata-dev
+      command: >
+        postgres
+        -c shared_buffers=256MB
+        -c effective_cache_size=1GB
+        -c maintenance_work_mem=128MB
+        -c checkpoint_completion_target=0.9
+        -c wal_buffers=16MB
+        -c default_statistics_target=100
+        -c random_page_cost=1.1
+        -c effective_io_concurrency=200
+        -c work_mem=8MB
+        -c min_wal_size=1GB
+        -c max_wal_size=4GB
+      properties:
+        "quarkus.datasource.jdbc.additional-jdbc-properties.stringtype": "unspecified"
+  
+  # Redis Dev Services
+  redis:
+    devservices:
+      enabled: true
+      image-name: redis:7-alpine
+      port: 6379
+      shared: true
+  
+  # Hibernate - Verbose logging in dev
+  hibernate-orm:
+    log:
+      sql: true
+      bind-parameters: true
+      format-sql: true
+  
+  # Flyway - Clean database on restart (dev only!)
+  flyway:
+    clean-at-start: false  # Set to true if you want fresh DB on each restart
+    baseline-on-migrate: true
+  
+  # Logging - More verbose in development
+  log:
+    level: DEBUG
+    category:
+      "com.talentpool": DEBUG
+      "io.quarkus": INFO
+      "org.hibernate.SQL": DEBUG
+      "org.hibernate.type.descriptor.sql.BasicBinder": TRACE
+      "org.flywaydb": DEBUG
+      "dev.langchain4j": DEBUG
+    console:
+      color: true
+  
+  # Live Reload
+  live-reload:
+    enabled: true
+    instrumentation: true
+  
+  # Dev UI
+  dev-ui:
+    enabled: true
+  
+  # OpenAPI - Include all endpoints in dev
+  smallrye-openapi:
+    servers:
+      - url: http://localhost:8080
+        description: Development server (Dev Services)
+  
+  # Health checks - Show all details in dev
+  smallrye-health:
+    ui:
+      enable: true
+
+# =============================================================================
+# LangChain4j - Development Configuration
+# =============================================================================
+langchain4j:
+  # Use Ollama for development (no API costs)
+  ollama:
+    base-url: http://localhost:11434
+    timeout: 60s
+    log-requests: true
+    log-responses: true
+    chat-model:
+      model-name: llama3.1
+      temperature: 0.3
+      num-predict: 2000
+  
+  # Disable OpenAI in dev (unless explicitly testing)
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+
+# =============================================================================
+# Application - Development Overrides
+# =============================================================================
+app:
+  llm:
+    provider: ollama  # Use local Ollama instead of OpenAI
+    cost-per-1k-tokens:
+      input: 0.0  # Free!
+      output: 0.0
+  
+  security:
+    rate-limiting:
+      enabled: false  # Disable rate limiting in dev
+  
+  email:
+    provider: console  # Log emails to console instead of sending
+  
+  storage:
+    provider: local
+    local:
+      base-path: ${user.home}/.talentpool/storage-dev
+  
+  features:
+    email-notifications: false  # Don't send real emails in dev
+
+# Made with Bob

@@ -1,0 +1,93 @@
+# =============================================================================
+# Talent Pool - Test Profile (Integration Tests)
+# =============================================================================
+# This profile is automatically activated when running `mvn verify`
+# Testcontainers will provision isolated containers for each test suite
+# =============================================================================
+
+quarkus:
+  # Test-specific datasource
+  datasource:
+    devservices:
+      enabled: true
+      image-name: pgvector/pgvector:pg16
+      port: 0  # Random port
+      db-name: talentpool_test
+      username: test
+      password: test
+      shared: false  # Isolated per test
+      reuse: true    # Reuse across test classes for speed
+  
+  # Redis for tests
+  redis:
+    devservices:
+      enabled: true
+      image-name: redis:7-alpine
+      port: 0  # Random port
+      shared: false
+      reuse: true
+  
+  # Flyway - Clean database before each test suite
+  flyway:
+    clean-at-start: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration,classpath:db/test-data
+  
+  # Hibernate - No SQL logging in tests (too verbose)
+  hibernate-orm:
+    log:
+      sql: false
+      bind-parameters: false
+  
+  # Logging - Minimal in tests
+  log:
+    level: WARN
+    category:
+      "com.talentpool": INFO
+      "io.quarkus": WARN
+      "org.hibernate": WARN
+      "org.flywaydb": INFO
+    console:
+      enable: true
+      format: "%d{HH:mm:ss} %-5p [%c{2.}] %s%e%n"
+  
+  # Transaction management for tests
+  transaction-manager:
+    default-transaction-timeout: 30s
+
+# =============================================================================
+# LangChain4j - Test Configuration (ALWAYS MOCKED)
+# =============================================================================
+# IMPORTANT: LLM calls are NEVER made in tests (see ADR-0003)
+# All LangChain4j services are mocked using @InjectMock
+langchain4j:
+  openai:
+    api-key: test-key-not-used
+  ollama:
+    base-url: http://localhost:11434  # Not actually called
+
+# =============================================================================
+# Application - Test Overrides
+# =============================================================================
+app:
+  llm:
+    provider: mock  # All LLM calls are mocked
+  
+  security:
+    password:
+      iterations: 1  # Faster password hashing in tests
+      memory-kb: 1024
+    rate-limiting:
+      enabled: false
+  
+  email:
+    provider: mock  # Don't send emails in tests
+  
+  storage:
+    provider: memory  # In-memory storage for tests
+  
+  features:
+    email-notifications: false
+    real-time-updates: false
+
+# Made with Bob

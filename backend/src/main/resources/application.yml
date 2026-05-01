@@ -1,0 +1,268 @@
+# =============================================================================
+# Talent Pool - Base Application Configuration
+# =============================================================================
+# This is the base configuration shared across all environments.
+# Environment-specific overrides are in application-{profile}.yml files.
+# =============================================================================
+
+# Application Metadata
+quarkus:
+  application:
+    name: talent-pool-api
+    version: ${project.version:1.0.0-SNAPSHOT}
+  
+  # HTTP Configuration
+  http:
+    port: 8080
+    host: 0.0.0.0
+    cors:
+      ~: true
+      origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+      methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      headers: accept,authorization,content-type,x-requested-with
+      exposed-headers: Content-Disposition
+      access-control-max-age: 86400
+    
+    # Request limits
+    limits:
+      max-body-size: 10M
+      max-form-attribute-size: 2048
+  
+  # Logging Configuration
+  log:
+    level: INFO
+    category:
+      "com.talentpool": INFO
+      "io.quarkus": INFO
+      "org.hibernate": WARN
+      "org.flywaydb": INFO
+    console:
+      enable: true
+      format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"
+      color: true
+    file:
+      enable: false
+      path: logs/application.log
+      rotation:
+        max-file-size: 10M
+        max-backup-index: 5
+  
+  # Database Configuration (Base - overridden per environment)
+  datasource:
+    db-kind: postgresql
+    username: ${DB_USERNAME:talentpool}
+    password: ${DB_PASSWORD:changeme}
+    jdbc:
+      url: ${DB_JDBC_URL:jdbc:postgresql://localhost:5432/talentpool}
+      min-size: 5
+      max-size: 20
+      acquisition-timeout: 10s
+      background-validation-interval: 2m
+      idle-removal-interval: 5m
+      max-lifetime: 30m
+      leak-detection-interval: 5m
+      transaction-isolation-level: read-committed
+  
+  # Hibernate Configuration
+  hibernate-orm:
+    database:
+      generation: none  # Flyway handles schema
+    log:
+      sql: false
+      bind-parameters: false
+    jdbc:
+      statement-batch-size: 20
+    fetch:
+      batch-size: 16
+    query:
+      query-plan-cache-max-size: 2048
+      default-null-ordering: last
+  
+  # Flyway Configuration
+  flyway:
+    migrate-at-start: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    table: flyway_schema_history
+    clean-at-start: false
+    clean-disabled: true
+    validate-on-migrate: true
+    out-of-order: false
+    ignore-missing-migrations: false
+    placeholder-replacement: true
+    placeholders:
+      app_user: talentpool
+  
+  # Redis Configuration (Base - overridden per environment)
+  redis:
+    hosts: ${REDIS_URL:redis://localhost:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 10s
+    client-type: standalone
+    max-pool-size: 20
+    max-pool-waiting: 50
+  
+  # Cache Configuration
+  cache:
+    enabled: true
+    type: redis
+    redis:
+      expire-after-write: 300s
+      expire-after-access: 600s
+      use-optimistic-locking: true
+  
+  # OpenAPI / Swagger Configuration
+  smallrye-openapi:
+    path: /openapi
+    info-title: Talent Pool API
+    info-version: ${quarkus.application.version}
+    info-description: AI-Powered Technical Assessment Platform
+    info-contact-name: Talent Pool Team
+    info-license-name: TBD
+    servers:
+      - url: http://localhost:8080
+        description: Development server
+  
+  swagger-ui:
+    path: /swagger-ui
+    always-include: true
+    theme: flattop
+    doc-expansion: list
+    operations-sorter: alpha
+  
+  # Health Checks
+  smallrye-health:
+    root-path: /q/health
+    liveness-path: /q/health/live
+    readiness-path: /q/health/ready
+    startup-path: /q/health/started
+    ui:
+      enable: true
+      root-path: /q/health-ui
+  
+  # Metrics Configuration
+  micrometer:
+    enabled: true
+    registry-enabled-default: true
+    binder-enabled-default: true
+    export:
+      prometheus:
+        enabled: true
+        path: /q/metrics
+  
+  # OpenTelemetry Configuration
+  otel:
+    enabled: false  # Enable in production
+    exporter:
+      otlp:
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+    service:
+      name: ${quarkus.application.name}
+    traces:
+      sampler: parentbased_always_on
+
+# =============================================================================
+# LangChain4j Configuration
+# =============================================================================
+langchain4j:
+  # OpenAI Configuration (Production)
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: https://api.openai.com/v1
+    timeout: 60s
+    max-retries: 3
+    log-requests: false
+    log-responses: false
+    chat-model:
+      model-name: gpt-4o-mini
+      temperature: 0.3
+      max-tokens: 2000
+      top-p: 1.0
+      frequency-penalty: 0.0
+      presence-penalty: 0.0
+  
+  # Ollama Configuration (Development)
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    timeout: 60s
+    log-requests: false
+    log-responses: false
+    chat-model:
+      model-name: llama3.1
+      temperature: 0.3
+      num-predict: 2000
+      top-p: 1.0
+
+# =============================================================================
+# Application-Specific Configuration
+# =============================================================================
+app:
+  # LLM Cost Tracking
+  llm:
+    provider: ${LLM_PROVIDER:ollama}  # ollama | openai | anthropic
+    cost-per-1k-tokens:
+      input: 0.00015   # GPT-4o-mini pricing
+      output: 0.0006
+    budget:
+      daily-limit-usd: 50.0
+      alert-threshold-usd: 40.0
+      alert-email: ${ALERT_EMAIL:admin@talentpool.io}
+  
+  # Challenge Generation
+  challenge:
+    generation:
+      timeout-seconds: 30
+      max-retries: 2
+      cache-ttl-seconds: 3600
+    evaluation:
+      timeout-seconds: 20
+      max-retries: 1
+      async-processing: true
+  
+  # Security
+  security:
+    password:
+      algorithm: argon2id
+      iterations: 3
+      memory-kb: 65536
+      parallelism: 4
+      salt-length: 16
+      hash-length: 32
+    rate-limiting:
+      enabled: true
+      requests-per-minute: 60
+      burst-size: 10
+  
+  # Email Configuration
+  email:
+    provider: ${EMAIL_PROVIDER:smtp}
+    from-address: noreply@talentpool.io
+    from-name: Talent Pool
+    smtp:
+      host: ${SMTP_HOST:localhost}
+      port: ${SMTP_PORT:587}
+      username: ${SMTP_USERNAME:}
+      password: ${SMTP_PASSWORD:}
+      tls: true
+      auth: true
+  
+  # File Storage
+  storage:
+    provider: ${STORAGE_PROVIDER:local}  # local | s3 | ibm-cos
+    local:
+      base-path: ${user.home}/.talentpool/storage
+      max-file-size-mb: 10
+  
+  # Feature Flags
+  features:
+    rag-enabled: false           # Phase 2
+    code-execution: false        # Phase 3
+    gamification: false          # Phase 4
+    payments: false              # Phase 4
+    analytics-dashboard: true
+    email-notifications: true
+    real-time-updates: false     # Phase 2 (WebSocket)
+
+# Made with Bob
