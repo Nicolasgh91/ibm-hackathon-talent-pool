@@ -11,10 +11,15 @@ quarkus:
       provider: ollama
   # Dev Services - Automatic Container Provisioning
   devservices:
-    enabled: true
+    enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
   
-  # PostgreSQL Dev Services
+  # PostgreSQL: credenciales por defecto alineadas a infra/compose/docker-compose.dev.yml.
+  # jdbc.url explícito desactiva JDBC Dev Services; sin él y con devservices.enabled, Quarkus levanta PG.
   datasource:
+    username: ${DB_USERNAME:talentpool}
+    password: ${DB_PASSWORD:talentpool_dev_pass}
+    jdbc:
+      url: ${DB_JDBC_URL:jdbc:postgresql://localhost:5432/talentpool_dev}
     devservices:
       enabled: true
       image-name: pgvector/pgvector:pg16

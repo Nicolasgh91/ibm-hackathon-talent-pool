@@ -21,19 +21,23 @@
 
 ### Required Software
 
-| Software | Version | Installation |
-|----------|---------|--------------|
-| **JDK** | 21 (Eclipse Temurin) | [Download](https://adoptium.net/) |
-| **Maven** | 3.9.x | [Download](https://maven.apache.org/download.cgi) |
-| **Docker** | 20.x+ | [Download](https://www.docker.com/products/docker-desktop) |
-| **Git** | 2.x+ | [Download](https://git-scm.com/downloads) |
+
+| Software   | Version              | Installation                                               |
+| ---------- | -------------------- | ---------------------------------------------------------- |
+| **JDK**    | 21 (Eclipse Temurin) | [Download](https://adoptium.net/)                          |
+| **Maven**  | 3.9.x                | [Download](https://maven.apache.org/download.cgi)          |
+| **Docker** | 20.x+                | [Download](https://www.docker.com/products/docker-desktop) |
+| **Git**    | 2.x+                 | [Download](https://git-scm.com/downloads)                  |
+
 
 ### Optional (for frontend development)
 
-| Software | Version | Installation |
-|----------|---------|--------------|
+
+| Software    | Version  | Installation                    |
+| ----------- | -------- | ------------------------------- |
 | **Node.js** | 20.x LTS | [Download](https://nodejs.org/) |
-| **pnpm** | 9.x | `npm install -g pnpm` |
+| **pnpm**    | 9.x      | `npm install -g pnpm`           |
+
 
 ### System Requirements
 
@@ -93,10 +97,10 @@ On first run, you'll see:
 
 Open your browser and visit:
 
-- **API**: http://localhost:8080
-- **Swagger UI**: http://localhost:8080/swagger-ui
-- **Health Check**: http://localhost:8080/q/health
-- **Dev UI**: http://localhost:8080/q/dev
+- **API**: [http://localhost:8080](http://localhost:8080)
+- **Swagger UI**: [http://localhost:8080/swagger-ui](http://localhost:8080/swagger-ui)
+- **Health Check**: [http://localhost:8080/q/health](http://localhost:8080/q/health)
+- **Dev UI**: [http://localhost:8080/q/dev](http://localhost:8080/q/dev)
 
 You should see:
 
@@ -134,33 +138,30 @@ You should see:
 Quarkus Dev Services automatically:
 
 1. **Downloaded Docker images** (only on first run):
-   - PostgreSQL 16 with pgvector extension
-   - Redis 7 (Alpine Linux)
-   - Ollama for local LLM inference
-
+  - PostgreSQL 16 with pgvector extension
+  - Redis 7 (Alpine Linux)
+  - Ollama for local LLM inference
 2. **Started containers** with optimal configurations:
-   - PostgreSQL on a random available port
-   - Redis on a random available port
-   - Ollama on port 11434
-
+  - PostgreSQL on a random available port
+  - Redis on a random available port
+  - Ollama on port 11434
 3. **Initialized the database**:
-   - Created database `talentpool_dev`
-   - Installed extensions: pgvector, pgcrypto, citext, uuid-ossp
-   - Ran all Flyway migrations (22 scripts)
-   - Created tables, indexes, and constraints
-
+  - Created database `talentpool_dev`
+  - Installed extensions: pgvector, pgcrypto, citext, uuid-ossp
+  - Ran all Flyway migrations (22 scripts)
+  - Created tables, indexes, and constraints
 4. **Downloaded the LLM model**:
-   - Pulled `llama3.1` (8 billion parameters, ~4.7GB)
-   - Stored in Docker volume for reuse
-
+  - Pulled `llama3.1` (8 billion parameters, ~4.7GB)
+  - Stored in Docker volume for reuse
 5. **Connected everything**:
-   - Application → PostgreSQL (via JDBC)
-   - Application → Redis (via Quarkus Redis client)
-   - Application → Ollama (via LangChain4j)
+  - Application → PostgreSQL (via JDBC)
+  - Application → Redis (via Quarkus Redis client)
+  - Application → Ollama (via LangChain4j)
 
 ### No Manual Configuration Required
 
 You didn't need to:
+
 - Install PostgreSQL locally
 - Configure database credentials
 - Run SQL scripts manually
@@ -190,6 +191,64 @@ mvn quarkus:dev
 # Containers stop automatically
 ```
 
+### Frontend (React + Vite + Tailwind CSS)
+
+The UI is a Vite + React SPA in `frontend/`. **Vite 8** expects Node.js **20.19+** or **22.12+** (upgrade if you see an engine warning).
+
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173 — /api is proxied to http://localhost:8080 (see vite.config.ts)
+```
+
+Tailwind CSS v4 uses `@tailwindcss/postcss` (configured in `frontend/postcss.config.js`). Run `npm install` in `frontend/` after every clone so PostCSS resolves correctly.
+
+Use `npm run build` to run the TypeScript project build and production bundle before opening a PR.
+
+### Login local (cuenta de desarrollo)
+
+El repositorio **no define contraseñas en texto claro** en migraciones Flyway: los usuarios se crean con `POST /api/v1/auth/register` (hash Argon2id en servidor). Para entrar al SPA (`/login`) necesitás el backend en marcha y una cuenta existente.
+
+**Cuenta convencional para desarrollo local** (creada vía API; uso exclusivo local):
+
+
+| Campo      | Valor                  |
+| ---------- | ---------------------- |
+| Email      | `dev@talentpool.local` |
+| Contraseña | `DevPass12`            |
+
+
+Cumple la validación del backend (contraseña entre 8 y 100 caracteres). El login **no exige** email verificado.
+
+Para registrar otro usuario o repetir la creación en una BD vacía:
+
+```bash
+curl -sS -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dev@talentpool.local","nombreCompleto":"Usuario Dev","password":"DevPass12"}'
+```
+
+Para listar cuentas en PostgreSQL (Dev Services / Docker típico: base `talentpool_dev`, usuario `talentpool`):
+
+```sql
+SELECT email, nombre_completo, email_verificado, created_at
+FROM usuarios
+ORDER BY created_at;
+```
+
+Si aparecen otros emails (p. ej. datos de prueba en tu volumen local) y no conocés la contraseña, registrá una cuenta nueva o restablecé la BD según tu flujo de equipo.
+
+**Contrato HTTP (SPA ↔ API)** — el frontend debe usar el mismo JSON que expone Quarkus:
+
+- `POST /api/v1/auth/login` — body `{ "email", "password" }`; respuesta `accessToken`, `refreshToken`, `tokenType`, `expiresIn`, `usuario` (`id`, `email`, `nombreCompleto`, `emailVerificado`).
+- `POST /api/v1/auth/register` — body `{ "email", "password", "nombreCompleto" }` (contraseña 8–100 caracteres). No se envía `rol` hasta que el backend lo soporte.
+- `GET /api/v1/auth/me` — header `Authorization: Bearer <accessToken>`; respuesta perfil (`nombreCompleto`, `fotoUrl`, etc.).
+
+**Docker Compose manual** (`infra/compose/docker-compose.dev.yml`): el perfil `dev` (`application-dev.yml`) apunta por defecto a `jdbc:postgresql://localhost:5432/talentpool_dev` con usuario `talentpool` y contraseña `talentpool_dev_pass`, igual que el contenedor. Si Quarkus muestra `password authentication failed for user "talentpool"`, revisá que Postgres esté arriba y que `DB_PASSWORD` / `DB_JDBC_URL` no contradigan ese compose.
+
+**Tests (`mvn test`)**: el perfil `test` usa la misma contraseña contra la base `talentpool_test`. Creala una vez en tu Postgres local si hace falta:  
+`psql -h localhost -U talentpool -d talentpool_dev -c "CREATE DATABASE talentpool_test;"`
+
 ### Subsequent Runs (Fast!)
 
 After the first run, startup is much faster:
@@ -207,6 +266,7 @@ After the first run, startup is much faster:
 ### Hot Reload
 
 Quarkus supports hot reload for:
+
 - ✅ Java source files
 - ✅ Configuration files (application.yml)
 - ✅ Static resources (HTML, CSS, JS)
@@ -395,7 +455,7 @@ docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1:7b
 
 1. **Docker Desktop**: Settings → Resources → Memory → Set to 8GB+
 2. **Linux**: Edit `/etc/docker/daemon.json`:
-   ```json
+  ```json
    {
      "default-ulimits": {
        "memlock": {
@@ -405,7 +465,7 @@ docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1:7b
        }
      }
    }
-   ```
+  ```
 
 Or disable Ollama temporarily:
 
@@ -520,6 +580,7 @@ backend/src/main/java/com/talentpool/
 ### 3. Pick Your First Task
 
 Check the project board for:
+
 - 🟢 **Good First Issue**: Perfect for newcomers
 - 🟡 **Help Wanted**: Need extra hands
 - 🔴 **Bug**: Something's broken
@@ -530,19 +591,19 @@ Check the project board for:
 
 1. **Import project**: File → Open → Select `backend/pom.xml`
 2. **Install plugins**:
-   - Quarkus Tools
-   - Lombok
-   - SonarLint
+  - Quarkus Tools
+  - Lombok
+  - SonarLint
 3. **Configure code style**: Import `backend/.editorconfig`
 4. **Enable annotation processing**: Settings → Build → Compiler → Annotation Processors
 
 #### VS Code
 
 1. **Install extensions**:
-   - Extension Pack for Java
-   - Quarkus
-   - Lombok Annotations Support
-   - SonarLint
+  - Extension Pack for Java
+  - Quarkus
+  - Lombok Annotations Support
+  - SonarLint
 2. **Open workspace**: File → Open Folder → Select `backend/`
 3. **Configure Java**: Cmd/Ctrl+Shift+P → "Java: Configure Java Runtime"
 
@@ -579,6 +640,7 @@ git push origin feature/UC-007-generate-challenge
 ```
 
 **Commit message format**: `type(scope): description`
+
 - **type**: feat, fix, docs, style, refactor, test, chore
 - **scope**: module or feature name
 - **description**: what changed (imperative mood)

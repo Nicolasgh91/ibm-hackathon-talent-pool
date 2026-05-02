@@ -163,24 +163,6 @@ quarkus:
       name: ${quarkus.application.name}
     traces:
       sampler: parentbased_always_on
-  # JWT Configuration
-  smallrye:
-    jwt:
-      sign:
-        key:
-          location: privateKey.pem
-      verify:
-        publickey:
-          location: publicKey.pem
-  
-  # MicroProfile JWT Configuration
-mp:
-  jwt:
-    verify:
-      issuer: talent-pool-api
-      publickey:
-        location: publicKey.pem
-
 
 # =============================================================================
 # LangChain4j Configuration
@@ -299,5 +281,24 @@ app:
     analytics-dashboard: true
     email-notifications: true
     real-time-updates: false     # Phase 2 (WebSocket)
+
+# =============================================================================
+# JWT (SmallRye + MicroProfile; raíz — smallrye.jwt.* sin prefijo quarkus.)
+# =============================================================================
+smallrye:
+  jwt:
+    sign:
+      key:
+        location: privateKey.pem
+    verify:
+      publickey:
+        location: publicKey.pem
+
+mp:
+  jwt:
+    verify:
+      issuer: talent-pool-api
+      publickey:
+        location: publicKey.pem
 
 # Made with Bob
