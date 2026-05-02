@@ -983,7 +983,7 @@ Antes de mergear cualquier migración nueva, verificar:
 
 ## 11. referencias
 
-- ER diagram: `docs/diagrams/er.mermaid` (renderizado en este chat)
+- DER (diagrama entidad-relación): [`database/DER.md`](../database/DER.md)
 - ADR-0002: estrategia de RAG y vector store (define uso de pgvector)
 - ADR-0003: estrategia de evaluación de LLMs (define `prompt_versiones`)
 - `ARCHITECTURE.md` §4: modelo de datos (visión de alto nivel)

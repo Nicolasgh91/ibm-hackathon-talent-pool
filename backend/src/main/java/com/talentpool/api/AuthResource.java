@@ -12,11 +12,10 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
 import java.util.UUID;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -27,7 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 /**
  * Authentication REST API.
  *
- * <p>Implements: - UC-001: Register user - UC-002: Login - GET /users/me: Get current user info
+ * <p>Implements: - UC-001: Register user - UC-002: Login - GET /auth/me: Get current user info
  */
 @Path("/api/v1/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -38,6 +37,8 @@ public class AuthResource {
   @Inject AuthService authService;
 
   @Inject JwtTokenService jwtTokenService;
+
+  @Inject JsonWebToken jwt;
 
   /**
    * Register a new user (UC-001).
@@ -88,7 +89,6 @@ public class AuthResource {
   /**
    * Get current user information.
    *
-   * @param securityContext security context with JWT claims
    * @return current user information
    */
   @GET
@@ -104,9 +104,9 @@ public class AuthResource {
         content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
     @APIResponse(responseCode = "401", description = "Not authenticated")
   })
-  public Response getCurrentUser(@Context SecurityContext securityContext) {
-    // Extract user ID from JWT subject claim
-    String subject = securityContext.getUserPrincipal().getName();
+  public Response getCurrentUser() {
+    // Principal#getName() maps to upn (email); user id is JWT "sub"
+    String subject = jwt.getSubject();
     UUID userId = jwtTokenService.parseUserId(subject);
 
     // Find user

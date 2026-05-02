@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Response DTO for user information (GET /api/v1/users/me).
+ * Response DTO for user information (GET /api/v1/auth/me).
  *
  * @param id User UUID
  * @param email User email

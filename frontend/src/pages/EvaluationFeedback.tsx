@@ -14,7 +14,6 @@ export function EvaluationFeedback() {
 
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null)
   const [loading, setLoading] = useState(true)
-  const [polling, setPolling] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -30,10 +29,7 @@ export function EvaluationFeedback() {
 
       // If still evaluating, poll for updates
       if (data.estado === 'EVALUANDO' || data.estado === 'PENDIENTE') {
-        setPolling(true)
         setTimeout(() => loadEvaluation(evalId), 3000) // Poll every 3 seconds
-      } else {
-        setPolling(false)
       }
     } catch (error) {
       toast.error('Failed to load evaluation')

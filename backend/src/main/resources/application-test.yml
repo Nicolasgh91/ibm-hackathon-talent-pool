@@ -1,93 +1,87 @@
 # =============================================================================
-# Talent Pool - Test Profile (Integration Tests)
+# Talent Pool - Test Profile (@QuarkusTest)
 # =============================================================================
-# This profile is automatically activated when running `mvn verify`
-# Testcontainers will provision isolated containers for each test suite
+# Sin Docker/Testcontainers: Dev Services desactivados; usar PostgreSQL local
+# (puerto 5432) con BD y credenciales alineadas a DB_* / JDBC URL abajo.
+# Con Docker funcional: QUARKUS_DEVSERVICES_ENABLED=true para contenedores de test.
 # =============================================================================
 
 quarkus:
-  # Test-specific datasource
+  devservices:
+    enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
+
   datasource:
     devservices:
-      enabled: true
-      image-name: pgvector/pgvector:pg16
-      port: 0  # Random port
-      db-name: talentpool_test
-      username: test
-      password: test
-      shared: false  # Isolated per test
-      reuse: true    # Reuse across test classes for speed
-  
-  # Redis for tests
+      enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
+    db-kind: postgresql
+    # Misma instancia que compose dev; crear BD `talentpool_test` una vez si no existe.
+    username: ${DB_USERNAME:talentpool}
+    password: ${DB_PASSWORD:talentpool_dev_pass}
+    jdbc:
+      url: ${DB_JDBC_URL:jdbc:postgresql://localhost:5432/talentpool_test}
+
   redis:
     devservices:
-      enabled: true
-      image-name: redis:7-alpine
-      port: 0  # Random port
-      shared: false
-      reuse: true
-  
-  # Flyway - Clean database before each test suite
+      enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
+
+  # Cache apunta a Redis en application.yml; sin Redis local desactivamos caché en tests.
+  cache:
+    enabled: false
+
   flyway:
     clean-at-start: true
+    clean-disabled: false
     baseline-on-migrate: true
     locations: classpath:db/migration,classpath:db/test-data
-  
-  # Hibernate - No SQL logging in tests (too verbose)
+
   hibernate-orm:
     log:
       sql: false
       bind-parameters: false
-  
-  # Logging - Minimal in tests
+
   log:
     level: WARN
     category:
-      "com.talentpool": INFO
-      "io.quarkus": WARN
-      "org.hibernate": WARN
-      "org.flywaydb": INFO
+      "com.talentpool":
+        level: INFO
+      "io.quarkus":
+        level: WARN
+      "org.hibernate":
+        level: WARN
+      "org.flywaydb":
+        level: INFO
     console:
       enable: true
       format: "%d{HH:mm:ss} %-5p [%c{2.}] %s%e%n"
-  
-  # Transaction management for tests
+
   transaction-manager:
     default-transaction-timeout: 30s
 
-# =============================================================================
-# LangChain4j - Test Configuration (ALWAYS MOCKED)
-# =============================================================================
-# IMPORTANT: LLM calls are NEVER made in tests (see ADR-0003)
-# All LangChain4j services are mocked using @InjectMock
+# JWT: smallrye.jwt.* y mp.jwt.* en application.yml (raíz), se fusionan con este perfil.
+
 langchain4j:
   openai:
     api-key: test-key-not-used
   ollama:
-    base-url: http://localhost:11434  # Not actually called
+    base-url: http://localhost:11434
 
-# =============================================================================
-# Application - Test Overrides
-# =============================================================================
 app:
   llm:
-    provider: mock  # All LLM calls are mocked
-  
+    provider: mock
+
   security:
     password:
-      iterations: 1  # Faster password hashing in tests
+      iterations: 1
       memory-kb: 1024
     rate-limiting:
       enabled: false
-  
+
   email:
-    provider: mock  # Don't send emails in tests
-  
+    provider: mock
+
   storage:
-    provider: memory  # In-memory storage for tests
-  
+    provider: memory
+
   features:
     email-notifications: false
     real-time-updates: false
-
-# Made with Bob
