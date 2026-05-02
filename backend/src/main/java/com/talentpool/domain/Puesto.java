@@ -1,0 +1,76 @@
+package com.talentpool.domain;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Puesto entity - Job position for corporate recruiting.
+ *
+ * <p>Based on product/DATABASE.md §3.3
+ */
+@Entity
+@Table(name = "puestos")
+public class Puesto extends PanacheEntityBase {
+
+  @Id
+  @Column(columnDefinition = "UUID")
+  public UUID id;
+
+  @Column(name = "organizacion_id", nullable = false, columnDefinition = "UUID")
+  public UUID organizacionId;
+
+  @Column(name = "reclutador_id", nullable = false, columnDefinition = "UUID")
+  public UUID reclutadorId;
+
+  @Column(nullable = false, length = 200)
+  public String titulo;
+
+  @Column(name = "tecnologia_principal", nullable = false, length = 100)
+  public String tecnologiaPrincipal;
+
+  @Column(nullable = false, length = 20)
+  public String seniority; // TRAINEE, JR, SSR, SR, LEAD
+
+  @Column(columnDefinition = "TEXT")
+  public String descripcion;
+
+  @Column(nullable = false, length = 20)
+  public String estado = "BORRADOR"; // BORRADOR, ABIERTO, PAUSADO, CERRADO
+
+  @Column(name = "created_at", nullable = false, updatable = false)
+  public Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  public Instant updatedAt;
+
+  @PrePersist
+  protected void onCreate() {
+    if (id == null) {
+      id = UUID.randomUUID();
+    }
+    createdAt = Instant.now();
+    updatedAt = Instant.now();
+  }
+
+  @PreUpdate
+  protected void onUpdate() {
+    updatedAt = Instant.now();
+  }
+
+  public static Puesto findByIdOptional(UUID id) {
+    return findById(id);
+  }
+
+  public static List<Puesto> findByOrganizacion(UUID organizacionId) {
+    return list("organizacionId", organizacionId);
+  }
+
+  public static List<Puesto> findOpenByOrganizacion(UUID organizacionId) {
+    return list("organizacionId = ?1 and estado = 'ABIERTO'", organizacionId);
+  }
+}
+
+// Made with Bob

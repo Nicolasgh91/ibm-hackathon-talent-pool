@@ -166,34 +166,27 @@ quarkus:
 # =============================================================================
 # LangChain4j Configuration
 # =============================================================================
-langchain4j:
-  # OpenAI Configuration (Production)
-  openai:
-    api-key: ${OPENAI_API_KEY:}
-    base-url: https://api.openai.com/v1
-    timeout: 60s
-    max-retries: 3
-    log-requests: false
-    log-responses: false
-    chat-model:
-      model-name: gpt-4o-mini
-      temperature: 0.3
-      max-tokens: 2000
-      top-p: 1.0
-      frequency-penalty: 0.0
-      presence-penalty: 0.0
-  
-  # Ollama Configuration (Development)
-  ollama:
-    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    timeout: 60s
-    log-requests: false
-    log-responses: false
-    chat-model:
-      model-name: llama3.1
-      temperature: 0.3
-      num-predict: 2000
-      top-p: 1.0
+quarkus:
+  langchain4j:
+    # Default provider (overridden by profile)
+    ollama:
+      chat-model:
+        model-id: qwen2.5-coder:1.5b
+        temperature: 0.3
+        timeout: 60s
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      log-requests: false
+      log-responses: false
+    
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat-model:
+        model-name: gpt-4o-mini
+        temperature: 0.3
+        max-tokens: 2000
+        timeout: 60s
+      log-requests: false
+      log-responses: false
 
 # =============================================================================
 # Application-Specific Configuration
@@ -209,6 +202,22 @@ app:
       daily-limit-usd: 50.0
       alert-threshold-usd: 40.0
       alert-email: ${ALERT_EMAIL:admin@talentpool.io}
+  
+  # Chat Configuration
+  chat:
+    max-message-length: 2000
+    rate-limit:
+      requests-per-minute: 10
+      window-seconds: 60
+    guardrails:
+      enabled: true
+      patterns:
+        - "ignore previous instructions"
+        - "disregard all"
+        - "system:"
+        - "<script>"
+        - "DROP TABLE"
+        - "DELETE FROM"
   
   # Challenge Generation
   challenge:
