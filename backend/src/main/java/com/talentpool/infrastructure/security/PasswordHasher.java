@@ -57,10 +57,15 @@ public class PasswordHasher {
    * @return true if password matches hash
    */
   public boolean verify(String hash, String password) {
+    if (hash == null || hash.isBlank()) {
+      return false;
+    }
     try {
       return argon2.verify(hash, password.toCharArray());
+    } catch (IllegalArgumentException e) {
+      // Corrupt or non-Argon2 hashes must not become HTTP 500 during login
+      return false;
     } finally {
-      // Wipe password from memory for security
       argon2.wipeArray(password.toCharArray());
     }
   }

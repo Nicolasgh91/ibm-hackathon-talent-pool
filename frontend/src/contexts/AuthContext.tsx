@@ -45,14 +45,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (credentials: LoginRequest) => {
     const response = await authService.login(credentials)
-    authService.saveToken(response.token)
+    authService.saveToken(response.accessToken)
+    authService.saveRefreshToken(response.refreshToken)
     authService.saveUser(response.user)
     setUser(response.user)
   }
 
   const register = async (data: RegisterRequest) => {
     const response = await authService.register(data)
-    authService.saveToken(response.token)
+    authService.saveToken(response.accessToken)
+    authService.saveRefreshToken(response.refreshToken)
     authService.saveUser(response.user)
     setUser(response.user)
   }

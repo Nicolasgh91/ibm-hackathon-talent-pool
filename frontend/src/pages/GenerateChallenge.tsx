@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Loading'
 import { jobPositionService } from '@/services/jobPositionService'
 import { challengeService } from '@/services/challengeService'
-import type { JobPosition, Challenge } from '@/types'
+import type { JobPosition } from '@/types'
 import { toast } from 'sonner'
 
 export function GenerateChallenge() {

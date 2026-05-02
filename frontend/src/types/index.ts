@@ -32,8 +32,36 @@ export interface RegisterRequest {
   rol: UserRole
 }
 
-export interface AuthResponse {
-  token: string
+/** POST /auth/login y /auth/register — coincide con backend AuthResponse */
+export interface AuthUsuarioDto {
+  id: string
+  email: string
+  nombreCompleto: string
+  emailVerificado: boolean
+}
+
+export interface AuthResponseDto {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: number
+  usuario: AuthUsuarioDto
+}
+
+/** GET /auth/me — coincide con backend UsuarioResponse */
+export interface UsuarioMeDto {
+  id: string
+  email: string
+  nombreCompleto: string
+  fotoUrl?: string | null
+  emailVerificado: boolean
+  createdAt: string
+}
+
+/** Sesión normalizada en el cliente (usuario mapeado a User para la UI) */
+export interface AuthSession {
+  accessToken: string
+  refreshToken: string
   user: User
 }
 

@@ -206,24 +206,23 @@ quarkus:
       name: ${quarkus.application.name}
     traces:
       sampler: parentbased_always_on
-  
-  # Security Configuration (JWT)
-  smallrye-jwt:
-    enabled: true
-    auth:
-      mechanism: MP-JWT
+
+# (En el archivo real, JWT va en raíz, después del bloque app — ver application.yml)
+smallrye:
+  jwt:
     sign:
-      key-location: /keys/privateKey.pem
+      key:
+        location: privateKey.pem
     verify:
-      key-location: /keys/publicKey.pem
-      issuer: https://talentpool.io
-      audience: talentpool-api
-    token:
-      header: Authorization
-      cookie: jwt_token
-    expiry:
-      access-token: 900  # 15 minutes
-      refresh-token: 604800  # 7 days
+      publickey:
+        location: publicKey.pem
+
+mp:
+  jwt:
+    verify:
+      issuer: talent-pool-api
+      publickey:
+        location: publicKey.pem
 
 # =============================================================================
 # LangChain4j Configuration
@@ -369,20 +368,22 @@ management:
 
 **File**: `backend/src/main/resources/application-dev.yml`
 
-This configuration enables Quarkus Dev Services for automatic local development setup.
+This profile extends development defaults. **Dev Services** (PostgreSQL y Redis vía Docker/Testcontainers) está **desactivado por defecto** (`QUARKUS_DEVSERVICES_ENABLED` sin definir o `false`) para que `mvn quarkus:dev` no falle en entornos donde Docker no es usable (p. ej. error `client version 1.32 is too old` / API mínima del daemon).
+
+- **Con Docker compatible**: `export QUARKUS_DEVSERVICES_ENABLED=true` antes de `quarkus:dev` para levantar contenedores automáticos según `application-dev.yml`.
+- **Sin Dev Services**: Postgres y Redis deben estar ya disponibles (por ejemplo `docker compose -f infra/compose/docker-compose.dev.yml up -d`) y alinear `DB_JDBC_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_URL` con ese stack.
 
 ```yaml
 # =============================================================================
 # Talent Pool - Development Profile (Dev Services)
 # =============================================================================
 # This profile is automatically activated when running `mvn quarkus:dev`
-# Dev Services will automatically provision PostgreSQL, Redis, and Ollama
 # =============================================================================
 
 quarkus:
-  # Dev Services - Automatic Container Provisioning
+  # Dev Services — opt-in (ver texto arriba)
   devservices:
-    enabled: true
+    enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
   
   # PostgreSQL Dev Services
   datasource:
@@ -585,111 +586,36 @@ $$;
 
 **File**: `backend/src/main/resources/application-test.yml`
 
-This configuration is used for integration tests with Testcontainers.
+Se activa con `mvn test` y `@QuarkusTest` (perfil `test`). **Por defecto no usa Docker / Dev Services**: hace falta **PostgreSQL** instalado en el host y una base dedicada. Valores por defecto: `jdbc:postgresql://localhost:5432/talentpool_test`, usuario `test`, contraseña `test`. Para crearlos (como superusuario `postgres` en Linux):
+
+```sql
+CREATE USER test WITH PASSWORD 'test';
+CREATE DATABASE talentpool_test OWNER test;
+```
+
+Opcional: `DB_JDBC_URL`, `DB_USERNAME`, `DB_PASSWORD`. Con Docker y Testcontainers de nuevo: `export QUARKUS_DEVSERVICES_ENABLED=true` antes de `mvn test`. Caché desactivada en tests para no requerir Redis.
 
 ```yaml
-# =============================================================================
-# Talent Pool - Test Profile (Integration Tests)
-# =============================================================================
-# This profile is automatically activated when running `mvn verify`
-# Testcontainers will provision isolated containers for each test suite
-# =============================================================================
-
+# Resumen; el archivo en el repo es la fuente de verdad
 quarkus:
-  # Test-specific datasource
+  devservices:
+    enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
   datasource:
     devservices:
-      enabled: true
-      image-name: pgvector/pgvector:pg16
-      port: 0  # Random port
-      db-name: talentpool_test
-      username: test
-      password: test
-      shared: false  # Isolated per test
-      reuse: true    # Reuse across test classes for speed
-  
-  # Redis for tests
+      enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
+    jdbc:
+      url: ${DB_JDBC_URL:jdbc:postgresql://localhost:5432/talentpool_test}
   redis:
     devservices:
-      enabled: true
-      image-name: redis:7-alpine
-      port: 0  # Random port
-      shared: false
-      reuse: true
-  
-  # Flyway - Clean database before each test suite
+      enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
+  cache:
+    enabled: false
   flyway:
     clean-at-start: true
-    baseline-on-migrate: true
     locations: classpath:db/migration,classpath:db/test-data
-  
-  # Hibernate - No SQL logging in tests (too verbose)
-  hibernate-orm:
-    log:
-      sql: false
-      bind-parameters: false
-  
-  # Logging - Minimal in tests
-  log:
-    level: WARN
-    category:
-      "com.talentpool": INFO
-      "io.quarkus": WARN
-      "org.hibernate": WARN
-      "org.flywaydb": INFO
-    console:
-      enable: true
-      format: "%d{HH:mm:ss} %-5p [%c{2.}] %s%e%n"
-  
-  # Transaction management for tests
-  transaction-manager:
-    default-transaction-timeout: 30s
-
-# =============================================================================
-# LangChain4j - Test Configuration (ALWAYS MOCKED)
-# =============================================================================
-# IMPORTANT: LLM calls are NEVER made in tests (see ADR-0003)
-# All LangChain4j services are mocked using @InjectMock
-langchain4j:
-  openai:
-    api-key: test-key-not-used
-  ollama:
-    base-url: http://localhost:11434  # Not actually called
-
-# =============================================================================
-# Application - Test Overrides
-# =============================================================================
-app:
-  llm:
-    provider: mock  # All LLM calls are mocked
-  
-  security:
-    password:
-      iterations: 1  # Faster password hashing in tests
-      memory-kb: 1024
-    rate-limiting:
-      enabled: false
-  
-  email:
-    provider: mock  # Don't send emails in tests
-  
-  storage:
-    provider: memory  # In-memory storage for tests
-  
-  features:
-    email-notifications: false
-    real-time-updates: false
-
-# =============================================================================
-# Test Data Configuration
-# =============================================================================
-test:
-  data:
-    seed-users: true
-    seed-organizations: true
-    seed-challenges: false  # Created per test
-    seed-evaluations: false  # Created per test
 ```
+
+Las claves JWT (`smallrye.jwt.*` / `mp.jwt.*`) están en la **raíz** de `application.yml`, no hace falta repetirlas en `application-test.yml`.
 
 **Additional File**: `backend/src/test/resources/db/test-data/V999__seed_test_data.sql`
 

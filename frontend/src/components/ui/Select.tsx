@@ -1,4 +1,4 @@
-import type { SelectHTMLAttributes, ReactNode } from 'react'
+import type { SelectHTMLAttributes } from 'react'
 
 interface SelectOption {
   value: string
