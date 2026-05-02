@@ -162,6 +162,24 @@ quarkus:
       name: ${quarkus.application.name}
     traces:
       sampler: parentbased_always_on
+  # JWT Configuration
+  smallrye:
+    jwt:
+      sign:
+        key:
+          location: privateKey.pem
+      verify:
+        publickey:
+          location: publicKey.pem
+  
+  # MicroProfile JWT Configuration
+mp:
+  jwt:
+    verify:
+      issuer: talent-pool-api
+      publickey:
+        location: publicKey.pem
+
 
 # =============================================================================
 # LangChain4j Configuration

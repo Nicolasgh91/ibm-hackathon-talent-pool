@@ -5,7 +5,6 @@
 # Start with: docker-compose -f infra/compose/docker-compose.dev.yml up -d
 # =============================================================================
 
-version: '3.8'
 
 services:
   # PostgreSQL 16 with pgvector
@@ -72,9 +71,10 @@ services:
       - OLLAMA_HOST=0.0.0.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 10
+      start_period: 120s
     networks:
       - talentpool-network
   
@@ -92,8 +92,8 @@ services:
       - |
         echo "Waiting for Ollama to be ready..."
         sleep 5
-        echo "Pulling llama3.1 model..."
-        ollama pull llama3.1
+        echo "Pulling lqwen2.5-coder:1.5b..."
+        ollama pull qwen2.5-coder:1.5b
         echo "Model pulled successfully!"
     networks:
       - talentpool-network

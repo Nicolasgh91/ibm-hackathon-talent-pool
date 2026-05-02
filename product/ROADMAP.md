@@ -1,563 +1,714 @@
-# ROADMAP.md — fases de desarrollo
+# ROADMAP ENHANCED — Talent Pool Development Plan
 
-> Documento vivo. Se actualiza al cierre de cada fase.
-> Última revisión: 2026-05-01
-
----
-
-## principios de avance
-
-1. **Una fase no empieza hasta que la anterior está cerrada con DoD verificada.**
-2. **Cada fase termina con una demo y una entrada en `CHANGELOG.md`.**
-3. **No se desarrollan UCs hasta haber completado fase 0 y fase 1.**
-4. **Deuda técnica detectada se registra en `TECH_DEBT.md` antes de avanzar.**
+> **Comprehensive development roadmap based on PRODUCT.md and ARCHITECTURE.md**
+> 
+> Last updated: 2026-05-01
 
 ---
 
-## fase 0 — fundaciones
+## Executive Summary
 
-**Objetivo**: dejar el repo y la infraestructura listos para que el desarrollo de features sea mecánico y seguro.
+### Project Vision
+Talent Pool is an AI-powered platform bridging technical education and employment through automated challenge generation and evaluation using LangChain4j.
 
-**Duración estimada**: 3-5 días
+### Timeline Overview
 
-**Entregables backend (Quarkus)**:
-- [ ] Repo inicializado con la estructura de carpetas de `ARCHITECTURE.md` §3
-  - `src/main/java/com/talentpool/` con subcarpetas: domain, application, infrastructure, api
-  - `src/main/resources/` con db/migration, prompts, application.yml
-  - `src/test/java/` con estructura paralela
-- [ ] `pom.xml` con dependencias Quarkus + LangChain4j en versiones fijadas
-  - Quarkus 3.x (última LTS)
-  - LangChain4j 0.35.x o superior
-  - PostgreSQL driver + Flyway
-  - Hibernate ORM con Panache
-  - RESTEasy Reactive + Jackson
-  - Micrometer + OpenTelemetry
-- [ ] Maven wrapper (`mvnw`) versionado en el repo
-- [ ] `.editorconfig` y plugin Spotless configurado para Java
-  - Google Java Style Guide como base
-  - Configuración en `pom.xml` con fase `validate`
-- [ ] Checkstyle o equivalente para reglas de estilo
-  - Archivo `checkstyle.xml` en raíz
-  - Integrado en Maven lifecycle
-- [ ] Flyway configurado con migración inicial vacía
-  - `V001__initial_schema.sql` con comentario placeholder
-  - Configuración en `application.yml` con estrategia clean en dev
-- [ ] Configuración base en `application.yml` con perfiles dev/test/prod
-  - Datasource con Quarkus Dev Services
-  - Logging JSON estructurado (formato ECS)
-  - Configuración de CORS para frontend local
-  - Placeholder para LangChain4j config
-- [ ] Quarkus Dev Services levanta Postgres en local sin configuración manual
-  - Incluir pgvector extension habilitada
-  - Seed data opcional para desarrollo
-- [ ] Logging JSON estructurado configurado
-  - Formato: timestamp, level, logger, message, context
-  - Configuración de niveles por paquete
-- [ ] Endpoints `/q/health/live`, `/q/health/ready`, `/q/metrics` respondiendo
-  - Health checks personalizados para BD y LLM provider
-- [ ] OpenAPI generándose en `/q/openapi`
-  - Anotaciones Swagger en recursos REST
-  - Esquemas de request/response documentados
-- [ ] Test mínimo `@QuarkusTest` funcionando
-  - Test de health endpoint
-  - Test de inyección CDI básica
-- [ ] Configuración de LangChain4j con un proveedor (Ollama para dev, configurable para staging/prod)
-  - Bean CDI `ChatLanguageModel` con @ApplicationScoped
-  - Configuración externalizada en application.yml
-  - Soporte para múltiples providers (OpenAI, Anthropic, Ollama)
-- [ ] Bean CDI de ChatModel inyectable y testeado con MockChatModel
-  - Test unitario con respuesta mockeada
-  - Validación de timeout y retry
+| Phase | Duration | Status | Priority | Deliverable |
+|-------|----------|--------|----------|-------------|
+| **0 - Foundations** | 3-5 days | Pending | CRITICAL | Infrastructure ready |
+| **1 - Walking Skeleton** | 5-7 days | Pending | CRITICAL | End-to-end validation |
+| **2 - MVP Hackathon** | 48-72h | Pending | **CRITICAL** | **Demo ready** |
+| **3 - Hardening** | 2-3 weeks | Pending | HIGH | Production ready |
+| **4 - Beta Launch** | 3-4 weeks | Pending | HIGH | 30 users live |
+| **5 - Academic Module** | 4-6 weeks | Planned | MEDIUM | Education features |
+| **6 - Corporate Expansion** | 8-12 weeks | Planned | MEDIUM | Enterprise ready |
+| **7 - Monetization** | 12-16 weeks | Planned | LOW | Revenue generation |
+| **8 - Continuous** | Ongoing | Planned | MEDIUM | Iterative enhancement |
 
-**Entregables frontend (React + TypeScript)**:
-- [ ] Proyecto Vite + React + TypeScript
-  - Estructura de carpetas: src/{components, pages, services, hooks, types, utils}
-  - Configuración de path aliases (@/ para src/)
-- [ ] eslint, prettier, tsc configurados con perfil estricto
-  - ESLint con reglas React + TypeScript recomendadas
-  - Prettier con formato consistente (2 espacios, single quotes)
-  - Pre-commit hooks con Husky + lint-staged
-- [ ] Cliente HTTP tipado generado desde OpenAPI (`openapi-typescript`)
-  - Script npm para regenerar tipos desde backend
-  - Axios o Fetch wrapper tipado
-- [ ] Página vacía que llama a un endpoint trivial del backend (`/health`)
-  - Componente de prueba de conectividad
-  - Manejo de errores básico
-- [ ] Test mínimo Vitest funcionando
-  - Test de componente simple
-  - Configuración de coverage
-- [ ] Test mínimo Playwright funcionando contra el dev server
-  - Test e2e de carga de página principal
-  - Configuración de múltiples navegadores
+### Critical Path to Hackathon Demo
 
-**Entregables infraestructura**:
-- [ ] `docker-compose.yml` para entorno local completo
-  - postgres:16-alpine con pgvector
-  - redis:7-alpine (para caché y rate limiting)
-  - ollama/ollama:latest (LLM local para desarrollo)
-  - backend en modo dev (hot reload)
-  - frontend en modo dev (hot reload)
-  - Volúmenes persistentes para BD y modelos
-- [ ] `Dockerfile.backend.jvm` funcional
-  - Multi-stage build: Maven build + JRE runtime
-  - Imagen base: eclipse-temurin:21-jre-alpine
-  - Optimización de capas para caché
-- [ ] `Dockerfile.frontend` funcional
-  - Multi-stage build: npm build + nginx
-  - Configuración nginx para SPA routing
-- [ ] (Opcional fase 0, obligatorio antes de fase 3) `Dockerfile.backend.native`
-  - GraalVM native-image build
-  - Configuración de reflection hints
-- [ ] Pipeline de CI mínimo verde (lint + tests placeholder + build)
-  - GitHub Actions o GitLab CI
-  - Jobs: lint-backend, lint-frontend, test-backend, test-frontend, build
-  - Caché de dependencias Maven y npm
-- [ ] Pipeline de deploy a entorno staging real
-  - Opción 1: Fly.io (recomendado para hackathon)
-  - Opción 2: Render o Railway
-  - Variables de entorno configuradas
-  - Deploy automático en merge a main
-- [ ] SonarQube / SonarCloud integrado con quality gate en modo suave (warning)
-  - Análisis de código en cada PR
-  - Métricas: cobertura, duplicación, code smells
-  - Quality gate: cobertura > 70%, sin bugs críticos
+```
+Phase 0 (5d) → Phase 1 (7d) → Phase 2 (3d) = 15 days total
+```
 
-**Entregables documentación**:
-- [ ] Plantillas en `docs/`: ADR, UC, runbook
-  - `docs/adr/0000-template.md` (ya existe)
-  - `docs/uc/UC-template.md` (ya existe)
-  - `docs/runbooks/incident-template.md` (ya existe)
-- [ ] `CONTRIBUTING.md`, `CHANGELOG.md`, `TECH_DEBT.md` creados
-  - CONTRIBUTING.md con guía de desarrollo, branching strategy, PR template
-  - CHANGELOG.md con formato Keep a Changelog
-  - TECH_DEBT.md con template de registro
-- [ ] ADR-0001 (stack base) cerrado
-  - Justificación de Quarkus + LangChain4j + React
-  - Alternativas consideradas
-  - Consecuencias y trade-offs
-- [ ] ADR-0002 (estrategia RAG y vector store) cerrado
-  - Decisión de usar pgvector vs alternativas
-  - Estrategia de embeddings y chunking
-  - Plan de implementación en Fase 2
-- [ ] ADR-0003 (estrategia de evaluación de LLMs) cerrado
-  - Framework de evals (LangChain4j evals o custom)
-  - Métricas: precisión, consistencia, latencia, costo
-  - Golden dataset inicial (30 casos)
-
-**Definición de hecho**:
-- ✅ Cualquier desarrollador puede levantar el proyecto local con un comando (`./mvnw quarkus:dev` y `pnpm dev`)
-- ✅ CI pasa en verde con todos los checks
-- ✅ Deploy a staging exitoso de un "hello world" que responde por API y se renderiza en el frontend
-- ✅ Documentación de setup en README.md actualizada y validada
-- ✅ Todos los ADRs de fase 0 cerrados y revisados
+**Hackathon Demo Date**: Day 15
 
 ---
 
-## fase 1 — walking skeleton
+## Development Principles
 
-**Objetivo**: validar la arquitectura completa de punta a punta con la feature más fina posible, incluyendo una primera capacidad LLM trivial.
-
-**Duración estimada**: 5-7 días
-
-**Alcance**:
-- Un usuario puede registrarse, hacer login, y ver una pantalla autenticada con un input que envía un mensaje a un LLM y muestra la respuesta.
-- Todo el flujo pasa por: frontend → API → BD → LangChain4j → proveedor LLM → respuesta → render.
-- Deployado a staging, observable, con tests, con guardrails básicos, con costo monitoreado.
-
-**Entregables backend**:
-- [ ] Migración Flyway con tabla `users`
-  - Campos: id, email, password_hash, role (ENUM: RECLUTADOR, CANDIDATO), created_at, updated_at
-  - Índices: unique en email, index en role
-  - Constraints: email format validation
-- [ ] Endpoints `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/users/me`
-  - POST /auth/register: crea usuario, retorna token JWT
-  - POST /auth/login: valida credenciales, retorna token JWT
-  - GET /users/me: retorna perfil del usuario autenticado
-  - Validación de input con Bean Validation
-- [ ] Endpoint `/api/v1/chat` con un AiService trivial
-  - POST /chat: recibe mensaje, retorna respuesta del LLM
-  - Prompt simple: "Eres un asistente técnico. Responde de forma concisa."
-  - Streaming opcional (SSE) para mejor UX
-- [ ] Auth implementada según `ARCHITECTURE.md` §7
-  - JWT con SmallRye JWT
-  - Roles: RECLUTADOR, CANDIDATO
-  - Interceptor para validación de roles en endpoints
-  - Refresh token strategy (opcional en fase 1)
-- [ ] Guardrails de input mínimos
-  - Longitud máxima de mensaje: 2000 caracteres
-  - Detección básica de inyección de prompts
-  - Sanitización de HTML/scripts
-- [ ] Rate limit por usuario en `/api/v1/chat`
-  - Redis-based rate limiter
-  - Límite: 10 requests/minuto por usuario
-  - Respuesta 429 con Retry-After header
-- [ ] Tests: unitarios de dominio, integración `@QuarkusTest`, e2e
-  - Unitarios: lógica de negocio, validaciones
-  - Integración: endpoints con BD en memoria (H2 o Testcontainers)
-  - E2E: flujo completo registro → login → chat
-- [ ] Test de unidad del AiService usando `MockChatModel`
-  - Mock de respuestas del LLM
-  - Validación de prompts enviados
-  - Test de timeout y retry
-- [ ] Suite de evals mínima (3-5 prompts) corriendo en CI
-  - Eval 1: Respuesta coherente a pregunta técnica simple
-  - Eval 2: Rechazo de pregunta fuera de dominio
-  - Eval 3: Formato de respuesta estructurado
-  - Eval 4: Consistencia en respuestas similares
-  - Eval 5: Latencia < 5s
-- [ ] Logs, métricas (incluyendo tokens y costo), trazas visibles
-  - Logs: JSON estructurado con correlation ID
-  - Métricas: Micrometer con contadores de requests, latencia, tokens
-  - Trazas: OpenTelemetry con spans para LLM calls
-  - Dashboard básico en Grafana o similar
-- [ ] Deploy a staging
-  - Variables de entorno configuradas (LLM API key, JWT secret)
-  - Health checks configurados en load balancer
-  - Logs centralizados (Loki, CloudWatch, etc.)
-
-**Entregables frontend**:
-- [ ] Páginas: registro, login, home autenticada con chat simple
-  - /register: formulario con email, password, confirmación
-  - /login: formulario con email, password
-  - /home: dashboard con chat interface
-  - Navegación con React Router
-- [ ] Componentes reutilizables
-  - Input con validación
-  - Button con estados (loading, disabled)
-  - ChatMessage component
-  - Layout con header y sidebar
-- [ ] Manejo de estado con Context API o Zustand
-  - AuthContext: usuario, token, login, logout
-  - ChatContext: mensajes, enviar mensaje
-- [ ] Integración con API backend
-  - Axios instance con interceptors
-  - Manejo de tokens en headers
-  - Refresh token automático
-- [ ] Manejo de errores y loading states
-  - Error boundaries
-  - Toasts para notificaciones
-  - Skeletons para loading
-
-**Entregables observabilidad**:
-- [ ] Métricas de negocio
-  - Contador de registros exitosos
-  - Contador de logins exitosos
-  - Contador de mensajes de chat
-  - Distribución de latencia de LLM
-- [ ] Métricas de costo LLM
-  - Tokens de entrada por request
-  - Tokens de salida por request
-  - Costo estimado por request (según pricing del provider)
-  - Costo acumulado diario
-- [ ] Alertas básicas
-  - Latencia p95 > 10s
-  - Error rate > 5%
-  - Costo diario > umbral definido
-  - Health check fallando
-
-**Definición de hecho**:
-- ✅ Un humano puede registrarse en staging, loguearse, mandar un mensaje al LLM y ver la respuesta
-- ✅ Las métricas muestran latencia, tokens consumidos y costo estimado del chat
-- ✅ Test e2e en CI verde de forma estable (sin flakiness)
-- ✅ Suite de evals corriendo y registrando resultados (todos pasando)
-- ✅ Logs estructurados visibles en herramienta de observabilidad
-- ✅ Documentación de API actualizada en OpenAPI
-- ✅ Demo grabada del flujo completo
+1. **Closed Decisions, Not Open** - Architecture is final (ADRs document changes)
+2. **Immutable Tests** - Fix code, never tests
+3. **LLM Tests Always Mocked** - Real calls only in eval suite
+4. **Documented Debt or It Doesn't Exist** - All shortcuts in TECH_DEBT.md
+5. **No Ambiguity** - Every UC has verifiable criteria
+6. **Security and Observability from Day 1** - Not final phases
+7. **Measured Quality, Not Assumed** - Linters, tests, evals block in CI
+8. **Controlled Costs** - Every LLM UC declares token budget
 
 ---
 
-## fase 2 — MVP funcional (Hackathon)
+## Phase 0: Foundations (Days 1-5)
 
-**Objetivo**: implementar los UCs marcados como críticos en `PRODUCT.md` para tener un MVP demostrable en hackathon.
+### Objective
+Establish infrastructure so feature development is mechanical and safe.
 
-**Duración estimada**: 48-72 horas
+### Key Deliverables
 
-**Prioridad**: CRÍTICA - Bloqueante para demo de hackathon
+**Backend (Quarkus)**
+- [ ] Project structure with mandatory folders (api, domain, application, infrastructure)
+- [ ] pom.xml with fixed versions (Quarkus 3.17.x, LangChain4j 1.x, PostgreSQL, Flyway)
+- [ ] Maven wrapper committed
+- [ ] Spotless + Checkstyle configured (Google Java Style)
+- [ ] Flyway with V001__initial_schema.sql placeholder
+- [ ] application.yml with profiles (dev/test/prod)
+- [ ] Quarkus Dev Services for PostgreSQL + pgvector
+- [ ] Health endpoints responding (/q/health/live, /q/health/ready, /q/metrics)
+- [ ] OpenAPI generating (/q/openapi)
+- [ ] Minimal @QuarkusTest passing
+- [ ] LangChain4j configured with MockChatModel test
 
-### UC-001: Generar desafío técnico automatizado
-**Duración**: 12-16 horas | **RF**: RF-001 a RF-009 | **RNF**: RNF-001
+**Frontend (React + TypeScript)**
+- [ ] Vite + React + TypeScript initialized
+- [ ] ESLint + Prettier + Husky configured
+- [ ] openapi-typescript client generation
+- [ ] Health check page calling backend
+- [ ] Vitest + Playwright configured
 
-**Entregables**:
-- [ ] Migración Flyway: tabla `PUESTO` (id, titulo, tecnologia_principal, seniority, descripcion, created_by, created_at)
-- [ ] Migración Flyway: tabla `DESAFIO` (id, puesto_id, enunciado, contexto, rubrica_oculta JSONB, dificultad, created_at)
-- [ ] POST `/api/v1/puestos` - Crear puesto con validaciones
-- [ ] POST `/api/v1/puestos/{id}/desafios/generar` - Generar desafío con LLM
-- [ ] AiService con prompt template `prompts/generar-desafio.txt`
-- [ ] Guardrails: validación JSON, longitud, estructura de rúbrica
-- [ ] Tests: unitarios, integración, evals (n=10 desafíos)
-- [ ] Frontend: formulario creación puesto + botón generar desafío
+**Infrastructure**
+- [ ] docker-compose.yml (postgres, redis, ollama, backend, frontend)
+- [ ] Dockerfile.backend.jvm (multi-stage build)
+- [ ] Dockerfile.frontend (nginx for SPA)
+- [ ] GitHub Actions CI pipeline (lint, test, build)
+- [ ] Staging deployment configured (Fly.io/Render/Railway)
+- [ ] SonarQube/SonarCloud integrated (warning mode)
 
-**Criterios de aceptación**:
-- ✅ Generación en < 30s (RNF-001)
-- ✅ Rúbrica JSONB válida y estructurada
-- ✅ Relevancia ≥ 85% según evals
-- ✅ Desafío personalizado por tecnología y seniority
+**Documentation**
+- [ ] CHANGELOG.md created
+- [ ] TECH_DEBT.md created
+- [ ] ADR-0001: Stack base closed
+- [ ] ADR-0002: RAG strategy closed
+- [ ] ADR-0003: LLM evals closed
 
-### UC-002: Resolver desafío y evaluar mediante análisis estático
-**Duración**: 16-20 horas | **RF**: RF-010 a RF-015, RF-034 | **RNF**: RNF-001
+### Definition of Done
+- ✅ `./mvnw quarkus:dev` and `pnpm dev` work on fresh clone
+- ✅ CI pipeline passes in green
+- ✅ Staging "hello world" accessible via HTTPS
+- ✅ README.md setup validated
 
-**Entregables**:
-- [ ] Migración Flyway: tabla `EVALUACION` (id, desafio_id, candidato_id, codigo_entregado, puntaje, feedback JSONB, estado, submitted_at, evaluated_at)
-- [ ] GET `/api/v1/desafios/{id}` - Ver desafío (sin rúbrica)
-- [ ] POST `/api/v1/desafios/{id}/evaluaciones` - Enviar solución
-- [ ] GET `/api/v1/evaluaciones/{id}` - Obtener resultado
-- [ ] AiService con prompt template `prompts/evaluar-codigo.txt`
-- [ ] Análisis estático: lógica, eficiencia, buenas prácticas (RF-015)
-- [ ] Feedback estructurado JSONB: puntaje, puntos_fuertes, areas_mejora, sugerencias
-- [ ] Tests: unitarios, integración, evals (precisión ≥ 80%, consistencia ≥ 90%)
-- [ ] Frontend: editor de código (Monaco/CodeMirror) + vista de resultados
-
-**Criterios de aceptación**:
-- ✅ Evaluación en < 10s
-- ✅ Puntaje 0-100 con feedback detallado
-- ✅ Precisión ≥ 80% vs golden set
-- ✅ Consistencia ≥ 90% en evaluaciones repetidas
-- ✅ Retroalimentación constructiva (RF-034)
-
-### UC-003: Visualizar ranking de candidatos y reportes
-**Duración**: 8-12 horas | **RF**: RF-027, RF-029 | **RNF**: RNF-008
-
-**Entregables**:
-- [ ] GET `/api/v1/desafios/{id}/ranking` - Ranking paginado
-- [ ] GET `/api/v1/evaluaciones/{id}/detalle` - Detalle completo (solo reclutador)
-- [ ] GET `/api/v1/puestos/{id}/estadisticas` - Métricas agregadas
-- [ ] Tests: integración, e2e
-- [ ] Frontend: dashboard reclutador con tabla ranking + gráficos
-- [ ] Frontend: vista detalle evaluación con código y feedback
-
-**Criterios de aceptación**:
-- ✅ Ranking ordenado por puntaje DESC
-- ✅ Filtros: puntaje mínimo, fecha
-- ✅ Estadísticas: total evaluaciones, promedio, distribución
-- ✅ Interfaz intuitiva (RNF-008)
-
-### UC-004: Acceder y seleccionar desafíos (candidato)
-**Duración**: 6-8 horas | **RF**: RF-010, RF-011
-
-**Entregables**:
-- [ ] GET `/api/v1/desafios` - Catálogo con filtros (tecnologia, seniority, dificultad)
-- [ ] GET `/api/v1/desafios/{id}/mis-evaluaciones` - Historial del candidato
-- [ ] Tests: integración, e2e
-- [ ] Frontend: catálogo con cards + filtros
-- [ ] Frontend: historial de evaluaciones propias
-
-**Criterios de aceptación**:
-- ✅ Catálogo filtrable y paginado
-- ✅ Historial acumulado de puntuación (RF-011)
-- ✅ Múltiples intentos permitidos (RF-010)
-
-**Definición de hecho de fase 2**:
-- ✅ UC-001 a UC-004 completados con criterios de aceptación
-- ✅ Cobertura: backend ≥ 75%, frontend ≥ 60%
-- ✅ Suite de evals: calidad ≥ 85%, precisión ≥ 80%, consistencia ≥ 90%
-- ✅ Métricas de producto: ≥ 50 desafíos, ≥ 100 evaluaciones, completitud ≥ 60%
-- ✅ Deploy a staging estable
-- ✅ Video demo 5 minutos para hackathon
+### Success Metrics
+- Setup time: < 15 minutes
+- CI duration: < 10 minutes
+- Docker startup: < 2 minutes
 
 ---
 
-## fase 3 — hardening (Post-Hackathon)
+## Phase 1: Walking Skeleton (Days 6-12)
 
-**Objetivo**: preparar el sistema para usuarios reales.
+### Objective
+Validate complete architecture end-to-end with trivial LLM capability.
 
-**Duración estimada**: 2-3 semanas
+### Scope
+User can: Register → Login → Send message to LLM → See response
 
-**Entregables seguridad**:
-- [ ] Auditoría OWASP Top 10
-- [ ] Encriptación: passwords (bcrypt), datos sensibles (RNF-004)
-- [ ] MFA para reclutadores (RNF-005)
-- [ ] Cumplimiento GDPR/LGPD (RNF-007)
-- [ ] Política de privacidad y términos de uso
+### Key Deliverables
 
-**Entregables calidad**:
-- [ ] SonarQube quality gate bloqueante (cobertura ≥ 80%)
-- [ ] Pruebas de carga: 100 usuarios concurrentes (RNF-003)
-- [ ] Pruebas de costo LLM: proyección mensual < USD 500
-- [ ] Pruebas de caos: caída BD, caída LLM, latencia alta
+**Backend**
+- [ ] Migration V002__users_table.sql (usuarios with email, password_hash)
+- [ ] POST /api/v1/auth/register (Argon2id hashing, JWT tokens)
+- [ ] POST /api/v1/auth/login (JWT with SmallRye JWT)
+- [ ] GET /api/v1/users/me (authenticated endpoint)
+- [ ] POST /api/v1/chat (LangChain4j integration, rate limiting)
+- [ ] Input guardrails (max 2000 chars, prompt injection detection)
+- [ ] Redis-based rate limiter (10 req/min per user)
+- [ ] Tests: unit (>80%), integration (@QuarkusTest >70%), E2E
+- [ ] LLM Evals (5 prompts, 100% pass rate)
+- [ ] Structured logs (JSON with correlation ID)
+- [ ] Metrics (Micrometer): auth, chat, tokens, cost
+- [ ] Traces (OpenTelemetry): LLM call spans
 
-**Entregables operación**:
-- [ ] Backups automáticos diarios con restore probado
-- [ ] Alertas para todos los SLOs
-- [ ] Runbooks: BD caída, LLM caído, latencia alta, costo disparado
-- [ ] Build nativo GraalVM (startup < 100ms, memoria < 256MB)
-- [ ] Plan de rollback probado (< 5 min)
+**Frontend**
+- [ ] /register page (form with validation)
+- [ ] /login page (JWT token handling)
+- [ ] /home page (chat interface with Monaco-like input)
+- [ ] AuthContext (login, logout, token refresh)
+- [ ] ChatContext (messages, sendMessage)
+- [ ] Axios instance with interceptors
+- [ ] Error boundaries + toast notifications
+- [ ] Loading skeletons
 
-**Definición de hecho**:
-- ✅ Carga: latencia p95 < 400ms con 300 usuarios
-- ✅ Restore desde backup exitoso (< 1h)
-- ✅ Cero hallazgos críticos de seguridad
-- ✅ Disponibilidad ≥ 99.5% durante 1 semana en staging
+**Observability**
+- [ ] Dashboard (Grafana): request rate, latency, tokens, cost
+- [ ] Alerts: latency >10s, error rate >5%, cost >$50/day
+
+### Definition of Done
+- ✅ Human can register, login, chat on staging
+- ✅ Metrics show latency, tokens, cost
+- ✅ E2E test passes in CI (no flakiness)
+- ✅ LLM eval suite passes (100%)
+- ✅ Demo video recorded (2-3 min)
+
+### Success Metrics
+- Login latency p95: < 500ms
+- Chat latency p95: < 8s
+- Token cost per chat: < $0.05
+- E2E stability: 100% (10 runs)
 
 ---
 
-## fase 4 — lanzamiento controlado
+## Phase 2: MVP Hackathon (Days 13-15) 🎯
 
-**Objetivo**: validar con usuarios reales.
+### Objective
+Implement 11 critical use cases for complete hackathon demo.
 
-**Duración estimada**: 3-4 semanas
+### Duration
+**48-72 hours** (CRITICAL DEADLINE)
 
-**Estrategia**:
-- [ ] Beta cerrada: 30 usuarios (10 reclutadores, 20 candidatos)
-- [ ] Onboarding guiado + soporte
-- [ ] Feedback loop: encuestas NPS, bug reports, feature requests
-- [ ] Telemetría: Mixpanel/Amplitude (eventos, funnels, retención)
-- [ ] Monitoreo de costos LLM en tiempo real
+### Use Cases
 
-**Métricas de éxito**:
-- [ ] Desafíos generados: ≥ 50
-- [ ] Evaluaciones completadas: ≥ 100
-- [ ] NPS: ≥ 7/10 (reclutadores y candidatos)
-- [ ] Disponibilidad: ≥ 99%
-- [ ] Costo por 100 evaluaciones: < USD 5
+**Identity & Onboarding** (from Phase 1)
+- UC-001: Register user ✅
+- UC-002: Login ✅
+- UC-003: Complete profile (enhanced with role selection)
 
-**Apertura gradual**:
-- Semana 1-2: 30 usuarios
-- Semana 3: 100 usuarios
-- Semana 4: 500 usuarios
-- Post-semana 4: Apertura general
+**Organization & Job Management**
+- UC-004: Create organization (4-6h)
+- UC-006: Create job position (6-8h)
 
-**Definición de hecho**:
-- ✅ Métricas de producto cumplidas con datos reales
-- ✅ SLOs cumplidos durante 4 semanas
+**AI Challenge Generation**
+- UC-007: Generate challenge from position (12-16h) - **CORE FEATURE**
+- UC-008: Confirm or regenerate challenge (4-6h)
+
+**Challenge Assignment & Solving**
+- UC-009: Invite candidate to challenge (6-8h)
+- UC-016: Accept invitation and access challenge (4-6h)
+- UC-017: Solve challenge with AI evaluation (16-20h) - **CORE FEATURE**
+- UC-018: View feedback (4-6h)
+
+**Recruiter Analytics**
+- UC-010: View candidate rankings (8-12h)
+- UC-011: View detailed evaluation (4-6h)
+
+### Database Schema (8 Tables)
+
+```sql
+-- Core tables for MVP
+usuarios              -- User accounts (from Phase 1)
+organizaciones        -- Companies/institutions
+membresias           -- User-organization relationships with roles
+puestos              -- Job positions
+prompt_versiones     -- Versioned LLM prompts
+desafios             -- AI-generated challenges with hidden rubrics
+asignaciones_desafio -- Challenge invitations
+evaluaciones         -- Solutions with AI feedback
+```
+
+### Critical Features
+
+#### UC-007: Generate Challenge (12-16h)
+**LangChain4j AiService**
+```java
+@SystemMessage("Eres un experto en diseño de desafíos técnicos...")
+@UserMessage("""
+    Tecnología: {{tecnologia}}
+    Seniority: {{seniority}}
+    Genera desafío en JSON: {titulo, enunciado, rubrica, minutosEstimados}
+    """)
+String generarDesafio(@V("tecnologia") String tech, @V("seniority") String sen);
+```
+
+**Acceptance Criteria**
+- ✅ Generation < 30s (RNF-001)
+- ✅ Valid JSONB rubrica
+- ✅ Relevance ≥ 85% (evals)
+- ✅ Personalized by tech + seniority
+
+#### UC-017: Solve & Evaluate (16-20h)
+**LangChain4j AiService**
+```java
+@SystemMessage("Eres un evaluador técnico experto...")
+@UserMessage("""
+    Desafío: {{enunciado}}
+    Rúbrica: {{rubrica}}
+    Código: {{codigo}}
+    Evalúa y retorna JSON: {puntaje, feedback, dimensiones}
+    """)
+String evaluarCodigo(@V("enunciado") String e, @V("rubrica") String r, @V("codigo") String c);
+```
+
+**Acceptance Criteria**
+- ✅ Evaluation < 10s
+- ✅ Score 0-100 with detailed feedback
+- ✅ Precision ≥ 80% vs golden set
+- ✅ Consistency ≥ 90% (repeated evals)
+
+### Frontend Components
+
+**Recruiter Dashboard**
+- [ ] Organization creation form
+- [ ] Job position form (tech dropdown, seniority selector)
+- [ ] Generate challenge button (with loading state)
+- [ ] Challenge review page (confirm/regenerate)
+- [ ] Invite candidate form
+- [ ] Rankings table (sortable, filterable)
+- [ ] Evaluation detail view (code + rubric analysis)
+
+**Candidate Dashboard**
+- [ ] Challenge invitation list
+- [ ] Challenge detail view (without rubric)
+- [ ] Monaco Editor integration (syntax highlighting)
+- [ ] Submit solution button
+- [ ] Feedback view (score, strengths, improvements)
+
+### Testing Strategy
+
+**Backend**
+- Unit: >75% coverage
+- Integration: @QuarkusTest with Testcontainers
+- E2E: Critical flows (register → create challenge → solve → view results)
+- LLM Evals: 30 cases (precision ≥80%, consistency ≥90%)
+
+**Frontend**
+- Unit: >60% coverage (Vitest)
+- E2E: Playwright (recruiter flow, candidate flow)
+
+### Definition of Done
+- ✅ UC-001 to UC-011, UC-016 to UC-018 complete with acceptance criteria
+- ✅ Coverage: backend ≥75%, frontend ≥60%
+- ✅ LLM evals: quality ≥85%, precision ≥80%, consistency ≥90%
+- ✅ Metrics: ≥50 challenges, ≥100 evaluations, completeness ≥60%
+- ✅ Staging stable
+- ✅ **Demo video 5 minutes for hackathon**
+
+### Success Metrics
+- Challenge generation time: < 30s
+- Evaluation time: < 10s
+- Challenge relevance: ≥ 85%
+- Evaluation accuracy: ≥ 80%
+- System availability: ≥ 99%
+- Cost per 100 evaluations: < $5
+
+### Demo Script (5 minutes)
+
+**Minute 1: Problem Statement**
+- Show pain points: manual grading, isolated learning, expensive onboarding
+
+**Minute 2: Recruiter Flow**
+- Create organization
+- Create job position (Java Backend SSR)
+- Generate AI challenge (show 15s generation)
+- Review and confirm challenge
+
+**Minute 3: Candidate Flow**
+- Accept invitation
+- View challenge
+- Write solution in Monaco Editor
+- Submit for evaluation
+
+**Minute 4: AI Evaluation**
+- Show evaluation in progress (< 10s)
+- Display detailed feedback (score, strengths, improvements)
+- Show rubric analysis
+
+**Minute 5: Analytics & Value**
+- Show candidate rankings
+- Highlight time saved (80% reduction in grading)
+- Show cost efficiency ($0.05 per evaluation)
+- Future roadmap teaser
+
+---
+
+## Phase 3: Hardening (Days 16-36)
+
+### Objective
+Prepare system for real users.
+
+### Key Deliverables
+
+**Security**
+- [ ] OWASP Top 10 audit
+- [ ] Password encryption (bcrypt), data encryption (RNF-004)
+- [ ] MFA for recruiters (RNF-005)
+- [ ] GDPR/LGPD compliance (RNF-007)
+- [ ] Privacy policy + terms of use
+
+**Quality**
+- [ ] SonarQube quality gate bloqueante (coverage ≥80%)
+- [ ] Load testing: 100 concurrent users (RNF-003)
+- [ ] Cost testing: monthly projection < $500
+- [ ] Chaos testing: DB failure, LLM failure, high latency
+
+**Operations**
+- [ ] Daily backups with tested restore (< 1h)
+- [ ] Alerts for all SLOs
+- [ ] Runbooks: DB down, LLM down, latency spike, cost spike
+- [ ] GraalVM native build (startup <100ms, memory <256MB)
+- [ ] Rollback plan tested (< 5 min)
+
+### Definition of Done
+- ✅ Load: p95 latency <400ms with 300 users
+- ✅ Restore from backup successful (<1h)
+- ✅ Zero critical security findings
+- ✅ Availability ≥99.5% for 1 week in staging
+
+---
+
+## Phase 4: Beta Launch (Days 37-64)
+
+### Objective
+Validate with real users.
+
+### Strategy
+- [ ] Beta cerrada: 30 users (10 recruiters, 20 candidates)
+- [ ] Onboarding guiado + support
+- [ ] Feedback loop: NPS surveys, bug reports, feature requests
+- [ ] Telemetry: Mixpanel/Amplitude (events, funnels, retention)
+- [ ] Real-time cost monitoring
+
+### Success Metrics
+- Challenges generated: ≥ 50
+- Evaluations completed: ≥ 100
+- NPS: ≥ 7/10
+- Availability: ≥ 99%
+- Cost per 100 evaluations: < $5
+
+### Gradual Rollout
+- Week 1-2: 30 users
+- Week 3: 100 users
+- Week 4: 500 users
+- Post-week 4: General availability
+
+### Definition of Done
+- ✅ Product metrics met with real data
+- ✅ SLOs met for 4 weeks
 - ✅ NPS ≥ 7/10
-- ✅ Cero incidentes críticos
+- ✅ Zero critical incidents
 
 ---
 
-## fase 5 — módulo académico y colaboración
+## Phase 5: Academic Module (Days 65-106)
 
-**Objetivo**: expansión para instituciones educativas.
+### Objective
+Expand to educational institutions.
 
-**Duración estimada**: 4-6 semanas
+### Use Cases (11 additional)
+- UC-005: Invite member with role
+- UC-012: Create course
+- UC-013: Enroll students
+- UC-014: Generate challenge for course
+- UC-015: Write student recommendation
+- UC-019: Manage talent pool visibility
+- UC-020: Accept/reject recommendation
+- UC-021: LLM query repository (collaborative learning)
+- UC-022: Vote on shared queries
 
-**Casos de uso**:
-- [ ] UC-005: Registro con roles DOCENTE/ESTUDIANTE
-- [ ] UC-006: OAuth (Google, GitHub, LinkedIn) + gestión de perfil
-- [ ] UC-007: Repositorio colectivo de consultas IA (RF-028)
-- [ ] UC-008: Guías de estudio personalizadas (RF-019 a RF-025)
+### Technical Additions
+- [ ] 12 new tables (cursos, inscripciones, perfiles_talento, consultas_llm, etc.)
+- [ ] RAG with pgvector (embeddings, chunking, retrieval)
+- [ ] Granular roles (DOCENTE, ESTUDIANTE, RECLUTADOR)
+- [ ] Teacher admin panel
+- [ ] Solution sharing
 
-**Entregables técnicos**:
-- [ ] RAG con pgvector: embeddings, chunking, retrieval
-- [ ] Roles granulares: DOCENTE, ESTUDIANTE, RECLUTADOR
-- [ ] Panel de administración para docentes
-- [ ] Compartición de resoluciones
-
-**Definición de hecho**:
-- ✅ UC-005 a UC-008 implementados
-- ✅ RAG con latencia < 2s
-- ✅ Reducción de costos LLM en 30%
-
----
-
-## fase 6 — expansión corporativa
-
-**Objetivo**: funcionalidades enterprise.
-
-**Duración estimada**: 8-12 semanas
-
-**Casos de uso**:
-- [ ] UC-009: Filtrar base de talento (RF-026, RF-027)
-- [ ] UC-010: Simuladores de flujos empresariales (RF-017, RF-018)
-
-**Entregables técnicos**:
-- [ ] Base de datos de talento filtrable
-- [ ] Analytics avanzados + reportes
-- [ ] API pública v1 con documentación
-- [ ] Integración con ATS
-
-**Definición de hecho**:
-- ✅ UC-009 y UC-010 implementados
-- ✅ API pública estable
-- ✅ ≥ 3 integraciones ATS funcionando
+### Definition of Done
+- ✅ UC-005 to UC-008, UC-012 to UC-015, UC-019 to UC-022 implemented
+- ✅ RAG latency < 2s
+- ✅ LLM cost reduction 30% (through query deduplication)
 
 ---
 
-## fase 7 — monetización y certificación
+## Phase 6: Corporate Expansion (Days 107-190)
 
-**Objetivo**: modelo de negocio sostenible.
+### Objective
+Enterprise features.
 
-**Duración estimada**: 12-16 semanas
+### Use Cases
+- UC-009: Filter talent database (RF-026, RF-027)
+- UC-010: Company workflow simulators (RF-017, RF-018)
 
-**Casos de uso**:
-- [ ] UC-011: Certificados digitales (RF-031)
-- [ ] UC-012: Suscripciones y pagos (RF-032)
+### Technical Additions
+- [ ] Searchable talent database
+- [ ] Advanced analytics + reports
+- [ ] Public API v1 with documentation
+- [ ] ATS integrations (Greenhouse, Lever, BambooHR)
 
-**Entregables técnicos**:
-- [ ] Sistema de suscripciones (Free, Pro, Enterprise)
-- [ ] Procesamiento de pagos con Stripe
-- [ ] Marketplace de desafíos premium
-
-**Definición de hecho**:
-- ✅ Pagos funcionando en producción
-- ✅ ≥ 10 clientes pagos
-- ✅ Certificados verificables
-
----
-
-## fase 8 — iteración continua
-
-**Objetivo**: mejora continua basada en datos.
-
-**Mecánica**:
-- Sprints de 2 semanas
-- Backlog priorizado por impacto
-- Revisión de deuda técnica mensual
-- Optimización de prompts mensual
-- Auditoría de seguridad trimestral
-
-**Actividades recurrentes**:
-- [ ] Métricas de producto (semanal)
-- [ ] Costos LLM (semanal)
-- [ ] Deuda técnica (mensual)
-- [ ] Suite de evals (mensual)
-- [ ] Auditoría de seguridad (trimestral)
+### Definition of Done
+- ✅ UC-009 and UC-010 implemented
+- ✅ API stable
+- ✅ ≥3 ATS integrations working
 
 ---
 
-## tablero de estado
+## Phase 7: Monetization (Days 191-302)
 
-| fase | estado | inicio | fin | notas |
-|------|--------|--------|-----|-------|
-| 0 — fundaciones | pendiente | — | — | Prerequisito |
-| 1 — walking skeleton | pendiente | — | — | Validación arquitectura |
-| 2 — MVP funcional | pendiente | — | — | **HACKATHON 48-72h** |
-| 3 — hardening | pendiente | — | — | Post-hackathon |
-| 4 — lanzamiento | pendiente | — | — | Beta cerrada |
-| 5 — módulo académico | planificado | — | — | Fase 2 producto |
-| 6 — expansión corporativa | planificado | — | — | Fase 3 producto |
-| 7 — monetización | planificado | — | — | Fase 4 producto |
-| 8 — iteración | continua | — | — | Mejora continua |
+### Objective
+Sustainable business model.
 
----
+### Use Cases
+- UC-011: Digital certificates (RF-031)
+- UC-012: Subscriptions and payments (RF-032)
 
-## dependencias críticas
+### Technical Additions
+- [ ] Subscription tiers (Free, Pro, Enterprise)
+- [ ] Payment processing (Stripe/MercadoPago)
+- [ ] Premium challenge marketplace
+- [ ] Certificate verification system
 
-**Fase 0 → Fase 1**: Infraestructura completa + LangChain4j configurado + CI/CD operativo
-
-**Fase 1 → Fase 2**: Walking skeleton validado + suite de evals + observabilidad básica
-
-**Fase 2 → Fase 3**: MVP funcional demostrado + métricas de hackathon cumplidas
-
-**Fase 3 → Fase 4**: Sistema hardened + auditoría de seguridad aprobada + SLOs validados
-
-**Fase 4 → Fase 5**: Lanzamiento exitoso + feedback de usuarios + métricas de producto estables
+### Definition of Done
+- ✅ Payments working in production
+- ✅ ≥10 paying customers
+- ✅ Verifiable certificates
 
 ---
 
-## mapeo de requerimientos a fases
+## Phase 8: Continuous Iteration (Ongoing)
 
-**MVP (Fase 2)**:
-- RF: 001-015, 034
-- RNF: 001, 008, 009
+### Objective
+Data-driven improvement.
 
-**Post-MVP (Fases 3-4)**:
-- RF: 026, 027, 029
-- RNF: 002-007, 010-013, 015
+### Mechanics
+- Sprints: 2 weeks
+- Backlog prioritized by impact
+- Monthly: tech debt review, prompt optimization
+- Quarterly: security audit
 
-**Expansión (Fases 5-7)**:
-- RF: 016-025, 028, 030-033, 035
-- RNF: 014
+### Recurring Activities
+- [ ] Product metrics (weekly)
+- [ ] LLM costs (weekly)
+- [ ] Tech debt (monthly)
+- [ ] Eval suite (monthly)
+- [ ] Security audit (quarterly)
 
 ---
 
-**Fin del documento ROADMAP.md**
+## Critical Path Analysis
+
+### Dependencies
+
+```mermaid
+graph LR
+    P0[Phase 0] --> P1[Phase 1]
+    P1 --> P2[Phase 2 MVP]
+    P2 --> P3[Phase 3]
+    P3 --> P4[Phase 4]
+    P4 --> P5[Phase 5]
+    P5 --> P6[Phase 6]
+    P6 --> P7[Phase 7]
+    
+    style P2 fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px
+```
+
+**Critical Path to Hackathon**: P0 → P1 → P2 (15 days)
+
+### Blockers
+
+| Phase | Blocker | Mitigation |
+|-------|---------|------------|
+| P0 → P1 | Infrastructure not ready | Daily standup, clear DoD |
+| P1 → P2 | Walking skeleton fails | Allocate buffer day |
+| P2 → P3 | MVP incomplete | Prioritize ruthlessly, cut scope if needed |
+| P3 → P4 | Security issues | Start security audit in P2 |
+
+---
+
+## Risk Management
+
+### High-Priority Risks
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| **LLM costs exceed budget** | High | Critical | Hard limits, cheaper models for dev, cost alerts |
+| **LLM quality insufficient** | Medium | Critical | Extensive eval suite, golden dataset, prompt engineering |
+| **Hackathon deadline missed** | Medium | Critical | Daily progress tracking, scope flexibility |
+| **Security vulnerability** | Low | Critical | OWASP audit, automated SAST, penetration testing |
+| **Performance degradation** | Medium | High | Load testing early, caching strategy, query optimization |
+| **Data loss** | Low | Critical | Daily backups, tested restore, replication |
+
+### Risk Response Plan
+
+**If LLM costs spike:**
+1. Activate cost alerts
+2. Switch to cheaper model (GPT-3.5 vs GPT-4)
+3. Implement aggressive caching
+4. Reduce token limits
+
+**If quality issues:**
+1. Expand eval suite
+2. Refine prompts with A/B testing
+3. Add human-in-the-loop validation
+4. Consider model fine-tuning
+
+**If deadline at risk:**
+1. Cut non-critical features
+2. Increase team hours (with breaks)
+3. Simplify UI/UX
+4. Focus on core demo flow
+
+---
+
+## Resource Allocation
+
+### Team Structure (Recommended)
+
+**Phase 0-2 (Hackathon Sprint)**
+- 1 Backend Lead (Quarkus + LangChain4j)
+- 1 Frontend Lead (React + TypeScript)
+- 1 DevOps/Infrastructure
+- 1 Product Owner (demo script, testing)
+
+**Phase 3-4 (Hardening + Beta)**
+- Add: 1 QA Engineer
+- Add: 1 Security Specialist (part-time)
+
+**Phase 5+ (Expansion)**
+- Scale team based on metrics
+
+### Time Allocation by Phase
+
+| Phase | Backend | Frontend | DevOps | Product | Total |
+|-------|---------|----------|--------|---------|-------|
+| P0 | 40% | 30% | 25% | 5% | 100% |
+| P1 | 45% | 35% | 15% | 5% | 100% |
+| P2 | 50% | 40% | 5% | 5% | 100% |
+| P3 | 30% | 20% | 40% | 10% | 100% |
+
+---
+
+## Success Metrics Dashboard
+
+### Phase 2 (MVP) Targets
+
+| Category | Metric | Target | Measurement |
+|----------|--------|--------|-------------|
+| **Product** | Challenges generated | ≥ 50 | Database count |
+| | Evaluations completed | ≥ 100 | Database count |
+| | Completion rate | ≥ 60% | (completed / started) |
+| | User satisfaction (NPS) | ≥ 7/10 | Survey |
+| **Technical** | Challenge generation time | < 30s | p95 latency |
+| | Evaluation time | < 10s | p95 latency |
+| | System availability | ≥ 99% | Uptime monitoring |
+| | Error rate | < 1% | 5xx / total requests |
+| **LLM** | Challenge relevance | ≥ 85% | Eval suite |
+| | Evaluation accuracy | ≥ 80% | vs human evaluator |
+| | Consistency | ≥ 90% | Repeated evals |
+| | Valid JSON responses | ≥ 98% | Parse success rate |
+| **Cost** | Cost per evaluation | < $0.05 | Token tracking |
+| | Daily cost | < $50 | Aggregated |
+| | Monthly projection | < $500 | Extrapolated |
+
+### Monitoring Tools
+
+- **Metrics**: Prometheus + Grafana
+- **Logs**: ELK Stack or Loki
+- **Traces**: Jaeger or Tempo
+- **Alerts**: PagerDuty or Opsgenie
+- **Cost**: Custom dashboard with LLM provider APIs
+
+---
+
+## Technical Debt Strategy
+
+### Debt Categories
+
+1. **Intentional Shortcuts** (documented in TECH_DEBT.md)
+   - Example: Email verification mocked in Phase 1
+   - Remediation: Phase 3
+
+2. **Discovered Issues** (from code reviews, incidents)
+   - Example: N+1 query in rankings endpoint
+   - Remediation: Next sprint
+
+3. **Architectural Limitations** (requires ADR)
+   - Example: Monolith → microservices
+   - Remediation: Phase 6+
+
+### Debt Management Process
+
+**Registration**
+```markdown
+## DEBT-001: Email Verification Mocked
+
+**Category**: Intentional Shortcut
+**Phase Introduced**: Phase 1
+**Impact**: Medium (users can't verify emails)
+**Effort**: 8 hours
+**Priority**: P1 (Phase 3)
+**Remediation Plan**:
+1. Integrate SendGrid/Postmark
+2. Create email templates
+3. Add verification flow
+4. Test with real emails
+```
+
+**Monthly Review**
+- [ ] Review all open debt items
+- [ ] Prioritize by impact × effort
+- [ ] Allocate 20% of sprint capacity to debt
+- [ ] Close resolved items
+
+**Quality Gates**
+- No P0 debt in production
+- Max 5 P1 debt items
+- Debt ratio < 10% (debt / total code)
+
+---
+
+## Appendix: Use Case Dependencies
+
+### UC Dependency Graph
+
+```mermaid
+graph TD
+    UC001[UC-001 Register] --> UC002[UC-002 Login]
+    UC002 --> UC003[UC-003 Complete Profile]
+    UC003 --> UC004[UC-004 Create Org]
+    UC004 --> UC006[UC-006 Create Position]
+    UC006 --> UC007[UC-007 Generate Challenge]
+    UC007 --> UC008[UC-008 Confirm Challenge]
+    UC008 --> UC009[UC-009 Invite Candidate]
+    UC009 --> UC016[UC-016 Accept Invitation]
+    UC016 --> UC017[UC-017 Solve Challenge]
+    UC017 --> UC018[UC-018 View Feedback]
+    UC008 --> UC010[UC-010 View Rankings]
+    UC017 --> UC010
+    UC017 --> UC011[UC-011 View Detail]
+    
+    style UC007 fill:#ffd43b,stroke:#fab005
+    style UC017 fill:#ffd43b,stroke:#fab005
+```
+
+### MVP Critical Path
+
+**Minimum viable demo flow:**
+```
+UC-001 → UC-002 → UC-004 → UC-006 → UC-007 → UC-008 → 
+UC-009 → UC-016 → UC-017 → UC-018 → UC-010 → UC-011
+```
+
+**Total estimated time**: 48-72 hours (Phase 2)
+
+---
+
+## Conclusion
+
+This roadmap provides a clear path from infrastructure setup to a production-ready, monetizable platform. The critical focus is **Phase 2 (MVP Hackathon)**, which must deliver a compelling demo in 48-72 hours.
+
+### Next Steps
+
+1. **Validate this roadmap** with stakeholders
+2. **Assign team members** to phases
+3. **Set up project tracking** (Jira, Linear, GitHub Projects)
+4. **Begin Phase 0** immediately
+5. **Daily standups** during Phases 0-2
+6. **Demo rehearsal** before hackathon presentation
+
+### Success Criteria
+
+**Hackathon Success** = Working demo + Clear value proposition + Technical excellence
+
+**Long-term Success** = User adoption + Cost efficiency + Scalable architecture
+
+---
+
+**Document Version**: 1.0
+**Last Updated**: 2026-05-01
+**Next Review**: After Phase 2 completion

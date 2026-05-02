@@ -35,4 +35,11 @@ dist/
 node_modules/
 *.log
 
+# JWT Keys (environment-specific, regenerate per environment)
+backend/src/main/resources/privateKey.pem
+backend/src/main/resources/publicKey.pem
+
+# Maven wrapper jar
+backend/.mvn/wrapper/maven-wrapper.jar
+
 # Made with Bob
