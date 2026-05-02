@@ -13,7 +13,7 @@ public class GeneratePasswordHash {
 
     @Test
     public void generateDemoPasswordHash() {
-        PasswordHasher hasher = new PasswordHasher();
+        PasswordHasher hasher = new PasswordHasher(3, 65536, 4);
         String hash = hasher.hash("Demo123!");
         System.out.println("\n===========================================");
         System.out.println("Password: Demo123!");

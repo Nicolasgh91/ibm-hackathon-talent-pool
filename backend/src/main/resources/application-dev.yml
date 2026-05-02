@@ -6,8 +6,10 @@
 # =============================================================================
 
 quarkus:
-  # Dev Services (Docker/Testcontainers). Default false: evita fallo de build si Docker no es
-  # compatible (p. ej. "client version 1.32 is too old"). Con Docker OK: export QUARKUS_DEVSERVICES_ENABLED=true
+  langchain4j:
+    chat-model:
+      provider: ollama
+  # Dev Services - Automatic Container Provisioning
   devservices:
     enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
   
@@ -122,6 +124,7 @@ langchain4j:
 app:
   llm:
     provider: ollama  # Use local Ollama instead of OpenAI
+    use-mock-llm: true
     cost-per-1k-tokens:
       input: 0.0  # Free!
       output: 0.0

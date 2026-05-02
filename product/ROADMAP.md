@@ -266,6 +266,7 @@ String evaluarCodigo(@V("enunciado") String e, @V("rubrica") String r, @V("codig
 - Unit: >75% coverage
 - Integration: @QuarkusTest with Testcontainers
 - E2E: Critical flows (register → create challenge → solve → view results)
+- Demo smoke (hackathon): `cd backend && ./mvnw compile exec:java` ejecuta `DemoSmokeClient` (HTTP end-to-end con seed demo; ver `docs/runbooks/demo-smoke-flow.md`)
 - LLM Evals: 30 cases (precision ≥80%, consistency ≥90%)
 
 **Frontend**

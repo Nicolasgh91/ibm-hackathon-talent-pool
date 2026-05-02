@@ -101,10 +101,6 @@ public class ChatService {
         cost =
             (inputTokens / 1000.0 * inputCostPer1k) + (outputTokens / 1000.0 * outputCostPer1k);
       }
-
-
-      llamadaLlmRepository.persist(llamada);
-
       TokenUsage tokenUsage = new TokenUsage(inputTokens, outputTokens, cost);
 
       // Record metrics

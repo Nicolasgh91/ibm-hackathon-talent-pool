@@ -201,7 +201,7 @@ public class MockChallengeGenerator {
                 .put("peso", 0.2)
                 .put("criterios", new JsonArray()
                     .add("Clean, readable code")
-                    .put("Descriptive variable names")
+                    .add("Descriptive variable names")
                     .add("Proper encapsulation")))
             .add(new JsonObject()
                 .put("nombre", "PRACTICAS")
