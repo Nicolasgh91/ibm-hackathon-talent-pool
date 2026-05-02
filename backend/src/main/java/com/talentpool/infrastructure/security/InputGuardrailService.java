@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.annotation.PostConstruct;
 import jakarta.ws.rs.BadRequestException;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -39,7 +40,7 @@ public class InputGuardrailService {
    *
    * <p>Patterns are compiled once for better performance during validation.
    */
-  jakarta.annotation.PostConstruct
+  @PostConstruct
   void init() {
     if (dangerousPatterns != null && !dangerousPatterns.isEmpty()) {
       compiledPatterns =
