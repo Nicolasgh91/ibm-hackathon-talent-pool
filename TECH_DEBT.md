@@ -7,13 +7,16 @@
 
 ## abiertos
 
-### TD-NNN: título corto
-- **detectado**: YYYY-MM-DD, fase N, PR #NNN
-- **contexto**: qué se hizo y por qué se tomó el atajo
-- **impacto**: alto / medio / bajo (con criterio: a quién afecta y cuándo)
-- **esfuerzo estimado**: horas / talla (S, M, L, XL)
-- **propuesta de resolución**: cómo se resolvería idealmente
-- **bloqueante para**: fase N / feature X / nada
+### TD-003: Demo-first security and test gaps in REST flow
+- **detectado**: 2026-05-02, hackathon demo sprint
+- **contexto**: se priorizó flujo demo funcional. `POST /api/v1/evaluations` quedó público por token y no se ejecutó suite completa de integración por bloqueo de Docker/Testcontainers en entorno actual.
+- **impacto**: medio (aceptable para demo; no apto para producción sin hardening y pruebas)
+- **esfuerzo estimado**: M (4 a 16h)
+- **propuesta de resolución**:
+  1. Reforzar autorización fina en evaluaciones/status/ranking.
+  2. Agregar tests de integración de los 7 endpoints con entorno estable.
+  3. Volver `POST /api/v1/evaluations` a JWT + token como validación adicional.
+- **bloqueante para**: salida a producción
 - **estado**: abierto
 
 ---

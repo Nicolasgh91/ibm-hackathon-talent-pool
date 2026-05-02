@@ -12,7 +12,7 @@ VALUES (
   '11111111-1111-1111-1111-111111111111',
   'recruiter@acme.com',
   'María Pérez',
-  '$argon2id$v=19$m=65536,t=3,p=4$YXNkZmFzZGZhc2RmYXNkZg$qwertyuiopasdfghjklzxcvbnm123456',
+  '$argon2id$v=19$m=65536,t=3,p=4$SVB3cgVwJY8otpobRu1gdg$ulDluIb0FtKDH3ai/F6J96t6z2G9LrJRQjG/akxgmOs',
   TRUE,
   NOW(),
   NOW()
@@ -49,7 +49,7 @@ VALUES
     'aaaa1111-1111-1111-1111-111111111111',
     'ana@example.com',
     'Ana García',
-    '$argon2id$v=19$m=65536,t=3,p=4$YXNkZmFzZGZhc2RmYXNkZg$qwertyuiopasdfghjklzxcvbnm123456',
+    '$argon2id$v=19$m=65536,t=3,p=4$SVB3cgVwJY8otpobRu1gdg$ulDluIb0FtKDH3ai/F6J96t6z2G9LrJRQjG/akxgmOs',
     TRUE,
     NOW(),
     NOW()
@@ -58,7 +58,7 @@ VALUES
     'aaaa2222-2222-2222-2222-222222222222',
     'pedro@example.com',
     'Pedro López',
-    '$argon2id$v=19$m=65536,t=3,p=4$YXNkZmFzZGZhc2RmYXNkZg$qwertyuiopasdfghjklzxcvbnm123456',
+    '$argon2id$v=19$m=65536,t=3,p=4$SVB3cgVwJY8otpobRu1gdg$ulDluIb0FtKDH3ai/F6J96t6z2G9LrJRQjG/akxgmOs',
     TRUE,
     NOW(),
     NOW()
@@ -67,7 +67,7 @@ VALUES
     'aaaa3333-3333-3333-3333-333333333333',
     'lucia@example.com',
     'Lucía Martínez',
-    '$argon2id$v=19$m=65536,t=3,p=4$YXNkZmFzZGZhc2RmYXNkZg$qwertyuiopasdfghjklzxcvbnm123456',
+    '$argon2id$v=19$m=65536,t=3,p=4$SVB3cgVwJY8otpobRu1gdg$ulDluIb0FtKDH3ai/F6J96t6z2G9LrJRQjG/akxgmOs',
     TRUE,
     NOW(),
     NOW()
@@ -141,8 +141,7 @@ BEGIN
   RAISE NOTICE '  - Organization: Acme Corp';
   RAISE NOTICE '  - Position: Backend Java SSR (ABIERTO)';
   RAISE NOTICE '';
-  RAISE NOTICE 'NOTE: Password hashes are placeholders. Update with real Argon2 hashes before demo!';
-  RAISE NOTICE 'Run: ./mvnw test -Dtest=GeneratePasswordHash to generate real hash';
+  RAISE NOTICE 'Password hashes loaded with argon2id for Demo123!';
 END $$;
 
 -- Made with Bob

@@ -1,7 +1,30 @@
 # Implementation Status - Talent Pool Backend
 
 **Date**: 2026-05-02  
-**Phase**: Phase 0 (Complete) + Phase 1 (Partial)
+**Phase**: Hackathon Demo Sprint (REST flow enabled)
+
+---
+
+## 🚀 Demo Sprint Update (2026-05-02)
+
+### Backend demo-ready scope completed
+- ✅ Added REST resources for:
+  - `POST /api/v1/positions`
+  - `POST /api/v1/challenges`
+  - `POST /api/v1/challenges/{id}/invitations`
+  - `GET /api/v1/invitations/by-token/{token}`
+  - `POST /api/v1/evaluations` (token-based public submit for demo)
+  - `GET /api/v1/evaluations/{id}`
+  - `GET /api/v1/positions/{id}/ranking`
+- ✅ Enabled mock-driven challenge generation and async evaluation flow.
+- ✅ Added demo CORS + timeout + mock-llm flag configuration.
+- ✅ Updated seed migration with valid argon2id hash for `Demo123!`.
+- ✅ Project compiles successfully (`./mvnw -DskipTests compile`).
+- ✅ Smoke de flujo REST (Java): `com.talentpool.tools.DemoSmokeClient` vía `exec-maven-plugin` (ver `docs/runbooks/demo-smoke-flow.md`).
+
+### Pending for full end-to-end verification
+- ⏳ Ejecutar `cd backend && ./mvnw -q compile exec:java` con API y DB en marcha; luego probar con frontend en `http://localhost:5173`.
+- ⏳ Run integration tests once Docker/Testcontainers environment is healthy.
 
 ---
 

@@ -7,7 +7,6 @@ import io.quarkus.redis.datasource.value.ValueCommands;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.annotation.PostConstruct;
-import java.time.Duration;
 import java.util.UUID;
 
 /**
@@ -60,7 +59,7 @@ public class RedisRateLimiter {
       if (currentCount == null) {
         // First request in window
         valueCommands.set(key, 1);
-        valueCommands.expire(key, Duration.ofSeconds(windowSeconds));
+        redisDataSource.key().expire(key, windowSeconds);
         recordAllowed(keyPrefix);
         Log.debugf("Rate limit: first request for key %s", key);
         return true;

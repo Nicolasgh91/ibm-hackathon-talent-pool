@@ -6,6 +6,9 @@
 # =============================================================================
 
 quarkus:
+  langchain4j:
+    chat-model:
+      provider: ollama
   # Dev Services - Automatic Container Provisioning
   devservices:
     enabled: true
@@ -116,6 +119,7 @@ langchain4j:
 app:
   llm:
     provider: ollama  # Use local Ollama instead of OpenAI
+    use-mock-llm: true
     cost-per-1k-tokens:
       input: 0.0  # Free!
       output: 0.0

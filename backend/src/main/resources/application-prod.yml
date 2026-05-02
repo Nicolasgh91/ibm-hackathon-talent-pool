@@ -6,6 +6,9 @@
 # =============================================================================
 
 quarkus:
+  langchain4j:
+    chat-model:
+      provider: openai
   # Dev Services DISABLED in production
   devservices:
     enabled: false
@@ -130,6 +133,7 @@ langchain4j:
 app:
   llm:
     provider: openai
+    use-mock-llm: false
     cost-per-1k-tokens:
       input: 0.00015
       output: 0.0006

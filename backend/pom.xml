@@ -252,6 +252,16 @@
                 </configuration>
             </plugin>
 
+            <!-- Demo smoke CLI: ./mvnw compile exec:java -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>com.talentpool.tools.DemoSmokeClient</mainClass>
+                </configuration>
+            </plugin>
+
             <!-- Surefire Plugin (Unit Tests) -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

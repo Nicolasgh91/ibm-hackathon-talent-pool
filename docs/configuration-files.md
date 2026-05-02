@@ -1,8 +1,19 @@
 # Quarkus Configuration Files - Complete Reference
 
 > **Document Version**: 1.0  
-> **Last Updated**: 2026-05-01  
+> **Last Updated**: 2026-05-02  
 > **Purpose**: Detailed configuration specifications for all environment profiles
+
+---
+
+## Demo Overrides (Hackathon)
+
+Current demo-oriented runtime settings:
+- CORS enabled for `http://localhost:5173` and `http://localhost:3000` with credentials allowed.
+- LLM timeout reduced to `30s` for both Ollama and OpenAI model config.
+- Added `app.llm.use-mock-llm` (`true` in dev, `false` in prod).
+- Added `quarkus.langchain4j.chat-model.provider` explicit per profile.
+- Added `app.invitations.base-url` and `app.invitations.default-expiry-days`.
 
 ---
 
