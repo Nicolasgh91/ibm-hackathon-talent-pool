@@ -6,6 +6,7 @@ import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -31,7 +32,7 @@ public class RedisRateLimiter {
   /**
    * Initialize Redis commands on startup.
    */
-  jakarta.annotation.PostConstruct
+ @PostConstruct
   void init() {
     valueCommands = redisDataSource.value(Integer.class);
     Log.info("RedisRateLimiter initialized");

@@ -102,6 +102,21 @@ public class ChatService {
             (inputTokens / 1000.0 * inputCostPer1k) + (outputTokens / 1000.0 * outputCostPer1k);
       }
 
+      // Persist audit record in DB
+      LlamadaLlm llamada = LlamadaLlm.builder()
+          .promptVersionId(promptVersion.id())
+          .proveedor(llmProvider)
+          .modelo(modelo)
+          .tokensIn(inputTokens)
+          .tokensOut(outputTokens)
+          .costoUsd(cost)
+          .latenciaMs(latencyMs)
+          .estado("OK")
+          .requestId(MDC.get("request_id"))
+          .build();
+
+      llamadaLlmRepository.persist(llamada);
+
       TokenUsage tokenUsage = new TokenUsage(inputTokens, outputTokens, cost);
 
       // Record metrics
