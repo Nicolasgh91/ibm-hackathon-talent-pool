@@ -23,7 +23,7 @@ What matches the roadmap:
 
 - **Backend**: Quarkus 3.17.x, LangChain4j, Flyway (migrations through demo schema), Maven wrapper, Spotless (Google Java Format), profiles `dev` / `test` / `prod`, SmallRye OpenAPI, health + Prometheus metrics, `@QuarkusTest` (`HealthCheckTest`, `AuthResourceTest`, `ChatResourceTest`).
 - **Frontend**: Vite + React + TypeScript, ESLint + Prettier + Husky, axios-based API client; script `npm run openapi:types` genera `frontend/src/types/api.gen.ts` desde [`api/openapi.yaml`](../api/openapi.yaml) (YAML maestro incremental).
-- **Compose (dev)**: [`infra/compose/docker-compose.dev.yml`](infra/compose/docker-compose.dev.yml) — PostgreSQL (pgvector), Redis, Ollama (no backend/frontend services).
+- **Compose (dev)**: [`infra/compose/docker-compose.dev.yml`](infra/compose/docker-compose.dev.yml) — PostgreSQL (pgvector), Redis (no backend/frontend services).
 - **Docs**: [`CHANGELOG.md`](CHANGELOG.md), [`TECH_DEBT.md`](TECH_DEBT.md), ADRs in [`docs/adr/`](docs/adr/).
 
 Still open vs roadmap: **GitHub Actions CI**, **Dockerfiles** for JVM backend / nginx frontend, **full-stack compose** with app containers, **SonarCloud**, **staging** HTTPS, **openapi-typescript** pipeline, **MockChatModel** tests, dedicated **health check page** in the SPA.

@@ -10,7 +10,7 @@
 
 Current demo-oriented runtime settings:
 - CORS enabled for local frontend dev on ports **5173** and **3000**, both `localhost` and `127.0.0.1` (distinct browser origins), with credentials allowed. Override via `CORS_ORIGINS` only when needed; avoid setting it to an empty string or the allowlist becomes empty and every browser origin is rejected.
-- LLM timeout reduced to `30s` for both Ollama and OpenAI model config.
+- LLM timeout reduced to `30s` for OpenAI chat model config.
 - Added `app.llm.use-mock-llm` (`true` in dev, `false` in prod).
 - Added `quarkus.langchain4j.chat-model.provider` explicit per profile.
 - OpenAI: base YAML must not set `quarkus.langchain4j.openai.api-key` to empty (`${VAR:}`); dev uses `quarkus.langchain4j.openai.enable-integration=false`; prod sets `api-key` from `OPENAI_API_KEY`.
@@ -257,18 +257,6 @@ langchain4j:
       frequency-penalty: 0.0
       presence-penalty: 0.0
   
-  # Ollama Configuration (Development)
-  ollama:
-    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    timeout: 60s
-    log-requests: false
-    log-responses: false
-    chat-model:
-      model-name: llama3.1
-      temperature: 0.3
-      num-predict: 2000
-      top-p: 1.0
-  
   # Embedding Model Configuration (for RAG - Phase 2)
   embedding-model:
     provider: openai
@@ -281,7 +269,7 @@ langchain4j:
 app:
   # LLM Cost Tracking
   llm:
-    provider: ${LLM_PROVIDER:ollama}  # ollama | openai | anthropic
+    provider: ${LLM_PROVIDER:openai}  # openai | anthropic | mock
     cost-per-1k-tokens:
       input: 0.00015   # GPT-4o-mini pricing
       output: 0.0006
@@ -406,8 +394,9 @@ quarkus:
 
   langchain4j:
     chat-model:
-      provider: ollama
+      provider: openai
     openai:
+      api-key: ${OPENAI_API_KEY:dev-key-not-used}
       enable-integration: false
   
   # PostgreSQL Dev Services
@@ -491,31 +480,17 @@ quarkus:
     ui:
       enable: true
 
-# =============================================================================
-# LangChain4j - Development Configuration
-# =============================================================================
-langchain4j:
-  # Use Ollama for development (no API costs)
-  ollama:
-    base-url: http://localhost:11434
-    timeout: 60s
-    log-requests: true
-    log-responses: true
-    chat-model:
-      model-name: llama3.1
-      temperature: 0.3
-      num-predict: 2000
-  
-  # Dev profile sets quarkus.langchain4j.openai.enable-integration=false (see application-dev.yml).
+# Dev profile: OpenAI integration disabled + dummy api-key; chat stubbed via app.llm.use-mock-llm=true.
 
 # =============================================================================
 # Application - Development Overrides
 # =============================================================================
 app:
   llm:
-    provider: ollama  # Use local Ollama instead of OpenAI
+    provider: mock
+    use-mock-llm: true
     cost-per-1k-tokens:
-      input: 0.0  # Free!
+      input: 0.0
       output: 0.0
   
   security:
@@ -533,26 +508,6 @@ app:
   features:
     email-notifications: false  # Don't send real emails in dev
 
-# =============================================================================
-# Dev Services Container Configuration
-# =============================================================================
-# These are passed to Testcontainers/Dev Services
-"%dev":
-  quarkus:
-    container-image:
-      build: false
-    
-    # Ollama Dev Services (custom configuration)
-    # Note: Ollama doesn't have native Dev Services support yet
-    # We'll use a custom DevServicesProcessor or docker-compose fallback
-    ollama:
-      enabled: true
-      image: ollama/ollama:latest
-      port: 11434
-      model: llama3.1
-      pull-model-on-start: true
-      volumes:
-        ollama: /root/.ollama
 ```
 
 **Additional File**: `backend/src/main/resources/db/dev-init.sql`
@@ -815,10 +770,6 @@ langchain4j:
       model-name: gpt-4o-mini
       temperature: 0.3
       max-tokens: 2000
-  
-  # Ollama disabled in production
-  ollama:
-    base-url: ""
 
 # =============================================================================
 # Application - Production Overrides
@@ -962,44 +913,6 @@ services:
     networks:
       - talentpool-network
   
-  # Ollama (Local LLM)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: talentpool-ollama-dev
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - talentpool-network
-  
-  # Ollama Model Puller (runs once to download model)
-  ollama-pull:
-    image: ollama/ollama:latest
-    container_name: talentpool-ollama-pull
-    depends_on:
-      ollama:
-        condition: service_healthy
-    volumes:
-      - ollama-data:/root/.ollama
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        echo "Waiting for Ollama to be ready..."
-        sleep 5
-        echo "Pulling llama3.1 model..."
-        ollama pull llama3.1
-        echo "Model pulled successfully!"
-    networks:
-      - talentpool-network
-  
   # pgAdmin (Optional - Database Management UI)
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -1024,8 +937,6 @@ volumes:
     name: talentpool-postgres-data
   redis-data:
     name: talentpool-redis-data
-  ollama-data:
-    name: talentpool-ollama-data
   pgadmin-data:
     name: talentpool-pgadmin-data
 
@@ -1063,7 +974,6 @@ quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/talentpool_dev
 quarkus.datasource.username=talentpool
 quarkus.datasource.password=talentpool_dev_pass
 quarkus.redis.hosts=redis://localhost:6379
-langchain4j.ollama.base-url=http://localhost:11434
 ```
 
 ---
@@ -1151,7 +1061,7 @@ When the application starts, it should validate:
 2. ✅ Required extensions installed (pgvector, pgcrypto, citext)
 3. ✅ Flyway migrations up to date
 4. ✅ Redis connection successful
-5. ✅ LLM provider accessible (OpenAI or Ollama)
+5. ✅ Chat mock path or OpenAI accessible as configured
 6. ✅ JWT keys loaded
 7. ✅ Required environment variables present (production only)
 
@@ -1186,14 +1096,6 @@ Expected response:
     {
       "name": "Redis connection health check",
       "status": "UP"
-    },
-    {
-      "name": "Ollama health check",
-      "status": "UP",
-      "data": {
-        "model": "llama3.1",
-        "version": "0.1.0"
-      }
     }
   ]
 }
@@ -1215,19 +1117,8 @@ docker stop <container-id>
 #### Issue: "pgvector extension not found"
 **Solution**: Ensure you're using the `pgvector/pgvector:pg16` image, not plain `postgres:16`
 
-#### Issue: "Ollama model not found"
-**Solution**: Pull the model manually:
-```bash
-docker exec -it talentpool-ollama-dev ollama pull llama3.1
-```
-
-#### Issue: "Out of memory when running Ollama"
-**Solution**: Increase Docker memory limit to at least 8GB or disable Ollama:
-```yaml
-langchain4j:
-  ollama:
-    base-url: ""  # Disable Ollama
-```
+#### Issue: "Chat always returns `[mock-llm]`"
+**Solution**: Expected when `app.llm.use-mock-llm=true`. For live OpenAI, set `use-mock-llm=false`, enable OpenAI integration, and set `OPENAI_API_KEY`.
 
 #### Issue: "Flyway migration failed"
 **Solution**: Check migration scripts and database state:
@@ -1246,7 +1137,7 @@ mvn flyway:repair
 1. **Create the actual configuration files** using the specifications above
 2. **Test Dev Services** with a minimal Quarkus application
 3. **Verify pgvector** extension is working correctly
-4. **Test Ollama integration** with sample prompts
+4. **Test chat** with mock LLM and (optionally) OpenAI
 5. **Create integration tests** using Testcontainers
 6. **Document developer onboarding** process
 

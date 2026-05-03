@@ -2,7 +2,7 @@
 # Talent Pool - Development Profile (Dev Services)
 # =============================================================================
 # This profile is automatically activated when running `mvn quarkus:dev`
-# Dev Services will automatically provision PostgreSQL, Redis, and Ollama
+# Dev Services provision PostgreSQL and Redis. Chat uses mock LLM unless use-mock-llm is false and OPENAI is configured.
 # =============================================================================
 
 quarkus:
@@ -12,8 +12,9 @@ quarkus:
       origins: http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
   langchain4j:
     chat-model:
-      provider: ollama
+      provider: openai
     openai:
+      api-key: ${OPENAI_API_KEY:dev-key-not-used}
       enable-integration: false
   # Dev Services - Automatic Container Provisioning
   devservices:
@@ -117,26 +118,11 @@ quarkus:
       enable: true
 
 # =============================================================================
-# LangChain4j - Development Configuration
-# =============================================================================
-langchain4j:
-  # Use Ollama for development (no API costs)
-  ollama:
-    base-url: http://localhost:11434
-    timeout: 60s
-    log-requests: true
-    log-responses: true
-    chat-model:
-      model-name: llama3.1
-      temperature: 0.3
-      num-predict: 2000
-  
-# =============================================================================
 # Application - Development Overrides
 # =============================================================================
 app:
   llm:
-    provider: ollama  # Use local Ollama instead of OpenAI
+    provider: mock
     use-mock-llm: true
     cost-per-1k-tokens:
       input: 0.0  # Free!

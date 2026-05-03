@@ -75,10 +75,6 @@ On first run, you'll see:
 [INFO] PostgreSQL database initialized: talentpool_dev
 [INFO] Pulling container image: redis:7-alpine
 [INFO] Container redis:7-alpine started in 2.1s
-[INFO] Pulling container image: ollama/ollama:latest
-[INFO] Container ollama/ollama:latest started in 5.3s
-[INFO] Pulling model: llama3.1 (this may take 3-5 minutes on first run)
-[INFO] Model llama3.1 downloaded successfully (4.7GB)
 [INFO] Running Flyway migrations...
 [INFO] Successfully applied 22 migrations
 [INFO] Application started in 45.2s
@@ -109,8 +105,7 @@ You should see:
   "status": "UP",
   "checks": [
     {"name": "Database connection", "status": "UP"},
-    {"name": "Redis connection", "status": "UP"},
-    {"name": "Ollama connection", "status": "UP"}
+    {"name": "Redis connection", "status": "UP"}
   ]
 }
 ```
@@ -140,23 +135,18 @@ Quarkus Dev Services automatically:
 1. **Downloaded Docker images** (only on first run):
   - PostgreSQL 16 with pgvector extension
   - Redis 7 (Alpine Linux)
-  - Ollama for local LLM inference
 2. **Started containers** with optimal configurations:
-  - PostgreSQL on a random available port
+  - PostgreSQL on a random available port (or fixed when using Compose)
   - Redis on a random available port
-  - Ollama on port 11434
 3. **Initialized the database**:
   - Created database `talentpool_dev`
   - Installed extensions: pgvector, pgcrypto, citext, uuid-ossp
   - Ran all Flyway migrations (22 scripts)
   - Created tables, indexes, and constraints
-4. **Downloaded the LLM model**:
-  - Pulled `llama3.1` (8 billion parameters, ~4.7GB)
-  - Stored in Docker volume for reuse
+4. **Chat LLM**: default dev profile uses **mock** responses (`app.llm.use-mock-llm=true`); optional OpenAI when configured.
 5. **Connected everything**:
   - Application → PostgreSQL (via JDBC)
   - Application → Redis (via Quarkus Redis client)
-  - Application → Ollama (via LangChain4j)
 
 ### No Manual Configuration Required
 
@@ -166,8 +156,6 @@ You didn't need to:
 - Configure database credentials
 - Run SQL scripts manually
 - Install Redis
-- Set up Ollama
-- Download LLM models
 - Configure connection strings
 
 **Dev Services handled everything automatically!**
@@ -256,8 +244,6 @@ After the first run, startup is much faster:
 ```
 [INFO] Container pgvector/pgvector:pg16 started in 2.1s (reused)
 [INFO] Container redis:7-alpine started in 0.8s (reused)
-[INFO] Container ollama/ollama:latest started in 1.2s (reused)
-[INFO] Model llama3.1 already available (skipped download)
 [INFO] Application started in 12.3s
 ```
 
@@ -379,22 +365,6 @@ FLUSHALL
 exit
 ```
 
-### Ollama Commands
-
-```bash
-# List available models
-docker exec -it <ollama-container-id> ollama list
-
-# Pull a different model
-docker exec -it <ollama-container-id> ollama pull llama3.1:70b
-
-# Run a test prompt
-docker exec -it <ollama-container-id> ollama run llama3.1 "Hello, world!"
-
-# Remove a model
-docker exec -it <ollama-container-id> ollama rm llama3.1
-```
-
 ---
 
 ## Troubleshooting
@@ -430,21 +400,6 @@ docker system df
 # Remove specific images
 docker rmi pgvector/pgvector:pg16
 docker rmi redis:7-alpine
-docker rmi ollama/ollama:latest
-```
-
-### Issue: "Ollama model download is slow"
-
-**Symptom**: First startup takes 10+ minutes downloading the model.
-
-**Solution**: This is normal for the first run (4.7GB download). To speed up:
-
-```bash
-# Download model in advance
-docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1
-
-# Or use a smaller model
-docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1:7b
 ```
 
 ### Issue: "Out of memory"
@@ -466,15 +421,6 @@ docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1:7b
      }
    }
   ```
-
-Or disable Ollama temporarily:
-
-```yaml
-# application-dev.yml
-langchain4j:
-  ollama:
-    base-url: ""  # Disable Ollama
-```
 
 ### Issue: "Flyway migration failed"
 
@@ -719,9 +665,9 @@ docker volume rm <volume-name>
 mvn quarkus:dev  # Fresh database!
 ```
 
-### Q: Can I use OpenAI instead of Ollama in development?
+### Q: Can I use OpenAI in development?
 
-**A**: Yes, set your API key:
+**A**: Yes. Set `app.llm.use-mock-llm=false`, enable OpenAI integration in config, and provide a key:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -737,19 +683,9 @@ mvn quarkus:dev
 2. **VS Code**: Use the "Attach to Quarkus" debug configuration
 3. **Port**: 5005 (default debug port)
 
-### Q: What if I don't have enough RAM for Ollama?
+### Q: What if I want zero cloud LLM usage locally?
 
-**A**: Disable Ollama and use OpenAI for development:
-
-```yaml
-# application-dev.yml
-langchain4j:
-  ollama:
-    base-url: ""
-app:
-  llm:
-    provider: openai
-```
+**A**: Keep `app.llm.use-mock-llm=true` (default in dev). Chat returns stub text; challenge/evaluation flows use existing mock generators where wired.
 
 ### Q: How do I contribute?
 

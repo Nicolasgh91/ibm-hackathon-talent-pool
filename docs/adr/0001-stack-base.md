@@ -116,7 +116,7 @@ El proveedor cloud y el proveedor LLM principal de producción se decidirán en 
 - Estructura de carpetas según `ARCHITECTURE.md` §3
 - `pom.xml` con Quarkus BOM y LangChain4j BOM importadas para garantizar compatibilidad de versiones
 - `package.json` con `engines` declarando Node y pnpm
-- Configuración de Docker compose para BD local con pgvector, Redis, Ollama, backend en `quarkus:dev` y frontend en `pnpm dev`
+- Configuración de Docker compose para BD local con pgvector, Redis, backend en `quarkus:dev` y frontend en `pnpm dev`
 - Plugin `quarkus-maven-plugin` configurado tanto para JVM como para nativo (perfil Maven `native`)
 
 ---

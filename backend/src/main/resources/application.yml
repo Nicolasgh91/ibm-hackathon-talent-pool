@@ -173,15 +173,7 @@ quarkus:
   # supply OPENAI via application-prod.yml when using the OpenAI provider; dev profile disables the integration.
   langchain4j:
     chat-model:
-      provider: ${LANGCHAIN_PROVIDER:ollama}
-    ollama:
-      chat-model:
-        model-id: qwen2.5-coder:1.5b
-        temperature: 0.3
-        timeout: 30s
-      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-      log-requests: false
-      log-responses: false
+      provider: ${LANGCHAIN_PROVIDER:openai}
     openai:
       chat-model:
         model-name: gpt-4o-mini
@@ -197,7 +189,7 @@ quarkus:
 app:
   # LLM Cost Tracking
   llm:
-    provider: ${LLM_PROVIDER:ollama}  # ollama | openai | anthropic
+    provider: ${LLM_PROVIDER:openai}  # openai | anthropic | mock
     use-mock-llm: ${USE_MOCK_LLM:false}
     cost-per-1k-tokens:
       input: 0.00015   # GPT-4o-mini pricing

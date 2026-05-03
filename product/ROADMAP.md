@@ -89,7 +89,7 @@ Establish infrastructure so feature development is mechanical and safe.
 - [~] Vitest + Playwright configured — scripts and deps present; **no committed `*.test.*` / `e2e/` specs yet**
 
 **Infrastructure**
-- [~] docker-compose.yml (postgres, redis, ollama, backend, frontend) — **only** postgres + redis + ollama (+ optional pgAdmin); **no backend/frontend containers**
+- [~] docker-compose.yml (postgres, redis, backend, frontend) — **only** postgres + redis (+ optional pgAdmin); **no backend/frontend containers**
 - [ ] Dockerfile.backend.jvm (multi-stage build)
 - [ ] Dockerfile.frontend (nginx for SPA)
 - [ ] GitHub Actions CI pipeline (lint, test, build)

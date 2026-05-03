@@ -128,10 +128,6 @@ langchain4j:
       model-name: gpt-4o-mini
       temperature: 0.3
       max-tokens: 2000
-  
-  # Ollama disabled in production
-  ollama:
-    base-url: ""
 
 # =============================================================================
 # Application - Production Overrides
