@@ -19,7 +19,7 @@
 2. **Development Profile** (`backend/src/main/resources/application-dev.yml`)
    - Dev Services enabled for PostgreSQL + pgvector
    - Dev Services enabled for Redis
-   - Ollama as default LLM provider
+   - Mock LLM for chat by default (`use-mock-llm`); OpenAI optional
    - Verbose logging and hot reload
 
 3. **Test Profile** (`backend/src/main/resources/application-test.yml`)
@@ -43,7 +43,6 @@
    - Manual service orchestration
    - PostgreSQL 16 + pgvector
    - Redis 7
-   - Ollama with automatic model download
    - Optional pgAdmin
 
 ### ✅ Documentation
@@ -89,7 +88,6 @@ mvn quarkus:dev
 **That's it!** Services start automatically:
 - PostgreSQL 16 + pgvector
 - Redis 7
-- Ollama (optional)
 
 ### Option 2: Docker Compose (Fallback)
 
@@ -156,7 +154,6 @@ hackathon/
    - quarkus-hibernate-orm-panache
    - quarkus-flyway
    - quarkus-redis-client
-   - quarkus-langchain4j-ollama
    - quarkus-langchain4j-openai
    - quarkus-smallrye-health
    - quarkus-micrometer-registry-prometheus
@@ -164,7 +161,6 @@ hackathon/
 2. **Implement health checks**:
    - DatabaseHealthCheck.java
    - RedisHealthCheck.java
-   - OllamaHealthCheck.java
 
 3. **Create integration tests**:
    - Test Dev Services startup
@@ -235,7 +231,7 @@ hackathon/
 - Easy transition to production
 
 ### Cost Efficiency
-- $0 for local development (Ollama)
+- $0 for local development (mock LLM; no inference container)
 - No cloud database costs
 - Shared containers across developers
 - Efficient resource usage
@@ -267,7 +263,7 @@ hackathon/
 
 ### Configuration Coverage
 - **Environments**: 4/4 (dev, test, prod, staging)
-- **Services**: 3/3 (PostgreSQL, Redis, Ollama)
+- **Services**: 2/2 (PostgreSQL, Redis)
 - **Status**: ✅ Complete
 
 ---
@@ -280,11 +276,8 @@ hackathon/
 ### Issue: Out of disk space
 **Solution**: `docker system prune -a --volumes`
 
-### Issue: Ollama download is slow
-**Solution**: Normal for first run (4.7GB model)
-
 ### Issue: Out of memory
-**Solution**: Increase Docker memory to 8GB+ or disable Ollama
+**Solution**: Increase Docker memory to 8GB+ or close other containers
 
 ### Issue: Flyway migration failed
 **Solution**: Check migration scripts, use `mvn flyway:repair`
@@ -307,7 +300,6 @@ hackathon/
 - [Quarkus Dev Services](https://quarkus.io/guides/dev-services)
 - [Testcontainers](https://www.testcontainers.org/)
 - [pgvector](https://github.com/pgvector/pgvector)
-- [Ollama](https://ollama.ai/docs)
 - [LangChain4j](https://docs.quarkiverse.io/quarkus-langchain4j/dev/)
 
 ---

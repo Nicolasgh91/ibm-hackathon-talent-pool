@@ -178,7 +178,7 @@ The platform implements **26 use cases** organized into functional areas. The MV
     │  PostgreSQL 16    │    │  LLM Providers     │
     │  + pgvector 0.7.x │    │  - OpenAI GPT-4    │
     │  + pgcrypto       │    │  - Anthropic Claude│
-    │  + citext         │    │  - Ollama (dev)    │
+    │  + citext         │    │  - Mock LLM (dev)   │
     │                   │    │                    │
     │  20 Tables:       │    │  via LangChain4j   │
     │  - usuarios       │    └────────────────────┘
@@ -290,7 +290,7 @@ The platform implements **26 use cases** organized into functional areas. The MV
 2. **Start infrastructure**
    ```bash
    cd infra/compose
-   docker-compose up -d  # PostgreSQL + pgvector + Redis + Ollama
+   docker-compose up -d  # PostgreSQL + pgvector + Redis
    ```
 
 3. **Backend**

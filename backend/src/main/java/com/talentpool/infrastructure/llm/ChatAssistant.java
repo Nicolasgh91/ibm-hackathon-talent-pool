@@ -9,7 +9,7 @@ import io.quarkiverse.langchain4j.RegisterAiService;
  * LangChain4j AI Service for chat functionality.
  *
  * <p>This interface is automatically implemented by Quarkus LangChain4j extension. It provides a
- * type-safe way to interact with the configured LLM (Ollama in dev, OpenAI in prod).
+ * type-safe way to interact with the configured LLM (OpenAI when integration is enabled).
  *
  * <p>The system message defines the assistant's behavior and personality. The user message template
  * allows for dynamic message injection.

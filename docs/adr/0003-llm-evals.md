@@ -95,7 +95,7 @@ Cada capacidad define su umbral mínimo de pass-rate. Default: 90% en suite smok
 - Carpeta `src/test/resources/evals/` con datasets versionados
 - Carpeta `src/test/java/.../evals/` con runners por capacidad
 - Profile Maven `evals-full` para ejecutar la suite completa (CI diario y pre-release)
-- Variable de entorno `EVAL_MODEL_PROVIDER` para alternar entre Ollama (CI rápido) y proveedor cloud (CI nocturno y pre-release)
+- Variable de entorno `EVAL_MODEL_PROVIDER` para alternar entre modelo mock o ligero en CI rápido y proveedor cloud en CI nocturno y pre-release
 - Métricas Micrometer publicadas con `eval.passrate{capability="X", version="Y"}`
 
 ---

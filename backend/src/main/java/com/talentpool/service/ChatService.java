@@ -9,6 +9,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.UUID;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -26,7 +27,7 @@ import org.jboss.logging.MDC;
 @ApplicationScoped
 public class ChatService {
 
-  @Inject ChatAssistant chatAssistant;
+  @Inject Instance<ChatAssistant> chatAssistant;
 
   @Inject MeterRegistry meterRegistry;
 
@@ -38,8 +39,11 @@ public class ChatService {
   @ConfigProperty(name = "app.llm.cost-per-1k-tokens.output", defaultValue = "0.0006")
   double outputCostPer1k;
 
-  @ConfigProperty(name = "app.llm.provider", defaultValue = "ollama")
+  @ConfigProperty(name = "app.llm.provider", defaultValue = "openai")
   String llmProvider;
+
+  @ConfigProperty(name = "app.llm.use-mock-llm", defaultValue = "false")
+  boolean useMockLlm;
 
   /**
    * Send a chat message to the LLM assistant.
@@ -63,6 +67,8 @@ public class ChatService {
     MDC.put("userId", userId.toString());
     MDC.put("conversationId", conversationId);
 
+    String metricsProvider = useMockLlm ? "mock" : llmProvider;
+
     Log.infof(
         "Processing chat request - correlationId: %s, userId: %s, conversationId: %s, messageLength: %d",
         correlationId, userId, conversationId, request.message().length());
@@ -74,40 +80,41 @@ public class ChatService {
       // Start timer for latency tracking
       Timer.Sample sample = Timer.start(meterRegistry);
 
-      // Call LLM
       String response;
-      if (request.conversationId() != null) {
-        response = chatAssistant.chat(request.message(), conversationId);
+      if (useMockLlm) {
+        response = mockChatReply(request.message(), conversationId);
+      } else if (request.conversationId() != null) {
+        response = chatAssistant.get().chat(request.message(), conversationId);
       } else {
-        response = chatAssistant.chat(request.message());
+        response = chatAssistant.get().chat(request.message());
       }
 
       // Stop timer and record latency
       sample.stop(
           Timer.builder("chat.latency")
               .description("Chat request latency")
-              .tag("provider", llmProvider)
+              .tag("provider", metricsProvider)
               .register(meterRegistry));
 
       // Estimate token usage (rough approximation: 1 token ≈ 4 characters)
       int inputTokens = estimateTokens(request.message());
       int outputTokens = estimateTokens(response);
 
-      // Calculate cost (free for Ollama)
+      // Cost only when using OpenAI (not mock / other providers)
       double cost = 0.0;
-      if ("openai".equalsIgnoreCase(llmProvider)) {
+      if (!useMockLlm && "openai".equalsIgnoreCase(llmProvider)) {
         cost = (inputTokens / 1000.0 * inputCostPer1k) + (outputTokens / 1000.0 * outputCostPer1k);
       }
       TokenUsage tokenUsage = new TokenUsage(inputTokens, outputTokens, cost);
 
       // Record metrics
       meterRegistry
-          .counter("chat.requests.total", "provider", llmProvider, "status", "success")
+          .counter("chat.requests.total", "provider", metricsProvider, "status", "success")
           .increment();
-      meterRegistry.counter("chat.tokens.input", "provider", llmProvider).increment(inputTokens);
-      meterRegistry.counter("chat.tokens.output", "provider", llmProvider).increment(outputTokens);
+      meterRegistry.counter("chat.tokens.input", "provider", metricsProvider).increment(inputTokens);
+      meterRegistry.counter("chat.tokens.output", "provider", metricsProvider).increment(outputTokens);
       if (cost > 0) {
-        meterRegistry.counter("chat.cost.usd", "provider", llmProvider).increment(cost);
+        meterRegistry.counter("chat.cost.usd", "provider", metricsProvider).increment(cost);
       }
 
       Log.infof(
@@ -119,7 +126,7 @@ public class ChatService {
     } catch (Exception e) {
       // Record error metric
       meterRegistry
-          .counter("chat.requests.total", "provider", llmProvider, "status", "error")
+          .counter("chat.requests.total", "provider", metricsProvider, "status", "error")
           .increment();
 
       Log.errorf(
@@ -154,6 +161,16 @@ public class ChatService {
     // Rough approximation: 1 token ≈ 4 characters
     // This is conservative; actual tokenization may vary
     return (int) Math.ceil(text.length() / 4.0);
+  }
+
+  private static String mockChatReply(String message, String conversationId) {
+    String preview =
+        message.length() > 200 ? message.substring(0, 200).concat("…") : message;
+    String suffix =
+        conversationId != null ? " [conversationId=%s]".formatted(conversationId) : "";
+    return "[mock-llm] Stub reply (set app.llm.use-mock-llm=false and configure OpenAI for live chat). Input preview: "
+        + preview
+        + suffix;
   }
 }
 

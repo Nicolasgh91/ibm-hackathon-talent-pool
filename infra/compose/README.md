@@ -32,16 +32,15 @@ docker-compose -f infra/compose/docker-compose.dev.yml down -v
 - **No password** (development only)
 - **Max memory**: 256MB with LRU eviction
 
-### Ollama (Local LLM)
-- **Port**: 11434
-- **Model**: llama3.1 (auto-downloaded on first run)
-- **Storage**: Persistent volume
-
 ### pgAdmin (Optional)
 - **Port**: 5050
 - **Email**: admin@talentpool.local
 - **Password**: admin
 - **Start with**: `docker-compose --profile tools up`
+
+## LLM (chat) in development
+
+The stack does **not** include a local inference server. By default the dev profile uses `app.llm.use-mock-llm=true` (stub chat responses). For real OpenAI calls, set `app.llm.use-mock-llm=false`, `quarkus.langchain4j.openai.enable-integration=true`, and a valid `OPENAI_API_KEY`.
 
 ## Configuration
 
@@ -54,7 +53,6 @@ quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/talentpool_dev
 quarkus.datasource.username=talentpool
 quarkus.datasource.password=talentpool_dev_pass
 quarkus.redis.hosts=redis://localhost:6379
-langchain4j.ollama.base-url=http://localhost:11434
 ```
 
 ## Useful Commands
@@ -94,22 +92,6 @@ FLUSHALL
 exit
 ```
 
-### Ollama
-
-```bash
-# List models
-docker exec -it talentpool-ollama-dev ollama list
-
-# Pull a model
-docker exec -it talentpool-ollama-dev ollama pull llama3.1
-
-# Test a prompt
-docker exec -it talentpool-ollama-dev ollama run llama3.1 "Hello, world!"
-
-# Remove a model
-docker exec -it talentpool-ollama-dev ollama rm llama3.1
-```
-
 ## Troubleshooting
 
 ### Port Already in Use
@@ -134,16 +116,6 @@ docker system prune -a --volumes
 docker system df
 ```
 
-### Ollama Model Download is Slow
-
-The first run downloads ~4.7GB for the llama3.1 model. This is normal and only happens once.
-
-To download in advance:
-
-```bash
-docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1
-```
-
 ## When to Use This
 
 Use Docker Compose instead of Dev Services when:
@@ -163,4 +135,4 @@ To completely remove all services and data:
 docker-compose -f infra/compose/docker-compose.dev.yml down -v
 
 # Remove images (optional)
-docker rmi pgvector/pgvector:pg16 redis:7-alpine ollama/ollama:latest
+docker rmi pgvector/pgvector:pg16 redis:7-alpine

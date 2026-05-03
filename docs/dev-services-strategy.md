@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-This document outlines the comprehensive strategy for configuring Quarkus Dev Services for the Talent Pool platform. Dev Services will automatically provision and configure PostgreSQL 16 (with pgvector), Redis 7.x, and Ollama for local development, eliminating manual infrastructure setup and ensuring consistency across development environments.
+This document outlines the comprehensive strategy for configuring Quarkus Dev Services for the Talent Pool platform. Dev Services automatically provision and configure PostgreSQL 16 (with pgvector) and Redis 7.x for local development. Chat LLM calls use **mock stubs** by default (`app.llm.use-mock-llm=true`); use OpenAI with a real API key when you need live responses.
 
 ### Key Benefits
 
@@ -28,19 +28,15 @@ This document outlines the comprehensive strategy for configuring Quarkus Dev Se
 graph TB
     A[Quarkus Application] --> B[PostgreSQL 16 + pgvector]
     A --> C[Redis 7.x]
-    A --> D[Ollama - Local LLM]
-    
+
     B --> E[Flyway Migrations]
     B --> F[pgvector Extension]
     B --> G[pgcrypto Extension]
     B --> H[citext Extension]
-    
-    D --> I[llama3.1 Model]
-    
+
     style A fill:#4CAF50
     style B fill:#336791
     style C fill:#DC382D
-    style D fill:#FF6B6B
 ```
 
 ### 2.2 Dev Services vs Manual Setup
@@ -140,41 +136,14 @@ cache:
 
 ---
 
-## 5. Ollama (Local LLM) Configuration
+## 5. LLM (chat) — mock by default, OpenAI optional
 
-### 5.1 Dev Services Configuration
+Quarkus Dev Services **do not** start a local inference server. Align with [`application-dev.yml`](../../backend/src/main/resources/application-dev.yml):
 
-**Container Image**: `ollama/ollama:latest`
-- Ollama runtime for local LLM inference
-- CPU-optimized (no GPU required for dev)
-- Model: `llama3.1:8b` (8 billion parameters)
+- **`app.llm.use-mock-llm: true`**: `ChatService` returns deterministic stub text (no external LLM).
+- **Live OpenAI**: set `use-mock-llm=false`, `quarkus.langchain4j.openai.enable-integration=true`, and `OPENAI_API_KEY`.
 
-**Why Ollama for Development?**
-- **Zero API costs**: No OpenAI/Anthropic charges during development
-- **Offline development**: Works without internet connection
-- **Fast iteration**: No network latency
-- **Privacy**: Sensitive test data never leaves localhost
-
-### 5.2 Model Management
-
-```bash
-# Automatic model pull on first startup
-ollama pull llama3.1:8b
-
-# Model storage: ~/.ollama/models (persisted across restarts)
-# Model size: ~4.7GB (one-time download)
-```
-
-### 5.3 Performance Expectations
-
-| Operation | Ollama (Local) | OpenAI GPT-4o-mini |
-|-----------|----------------|-------------------|
-| Challenge Generation | 15-30s | 3-8s |
-| Code Evaluation | 10-20s | 2-5s |
-| Token Cost | $0.00 | ~$0.02 per eval |
-| Throughput | 1-2 req/s | 10+ req/s |
-
-**Recommendation**: Use Ollama for development, OpenAI for production and demos.
+Challenge/evaluation flows already honor `use-mock-llm` via mock generators where implemented.
 
 ---
 
@@ -237,7 +206,7 @@ public class DesafioServiceIT {
     @Test
     public void testGenerarDesafio() {
         // Test uses same PostgreSQL + Redis as dev mode
-        // LLM calls are mocked (never hit Ollama in tests)
+        // LLM calls are mocked (no external LLM in tests)
     }
 }
 ```
@@ -264,7 +233,6 @@ public class DesafioServiceIT {
 **Service Endpoints**:
 - PostgreSQL: `localhost:<random-port>` (auto-discovered)
 - Redis: `localhost:<random-port>` (auto-discovered)
-- Ollama: `localhost:11434` (fixed port)
 
 ### 8.2 Testing (Testcontainers)
 
@@ -349,9 +317,6 @@ mvn quarkus:dev
 # [INFO] Database initialized with Flyway migrations
 # [INFO] Pulling container image: redis:7-alpine
 # [INFO] Container started in 2.1s
-# [INFO] Pulling container image: ollama/ollama:latest
-# [INFO] Container started in 5.3s
-# [INFO] Pulling model: llama3.1:8b (this may take a few minutes on first run)
 # [INFO] Application started in 45.2s
 # [INFO] Listening on http://localhost:8080
 ```
@@ -385,14 +350,6 @@ docker system prune -a --volumes
 # Dev Services will re-download on next startup
 ```
 
-**Issue**: "Ollama model download is slow"
-```bash
-# Download model manually (one-time)
-docker run -v ollama:/root/.ollama ollama/ollama pull llama3.1:8b
-
-# Dev Services will detect existing model
-```
-
 ---
 
 ## 11. Performance Considerations
@@ -420,10 +377,6 @@ postgresql:
 redis:
   memory: 256MB
   cpu: 0.5
-
-ollama:
-  memory: 4GB      # Model loading requires significant RAM
-  cpu: 2.0
 ```
 
 ### 11.3 Optimization Tips
@@ -431,7 +384,7 @@ ollama:
 1. **Use Docker Desktop with WSL2** (Windows) or **Colima** (macOS) for better performance
 2. **Enable BuildKit** for faster image builds
 3. **Use volume mounts** for PostgreSQL data persistence (optional)
-4. **Disable Ollama** if not working on LLM features (saves 4GB RAM)
+4. **Keep `use-mock-llm=true`** when you do not need live OpenAI calls (avoids API usage and latency)
 
 ---
 
@@ -477,8 +430,7 @@ curl http://localhost:8080/q/health
   "status": "UP",
   "checks": [
     {"name": "Database connection", "status": "UP"},
-    {"name": "Redis connection", "status": "UP"},
-    {"name": "Ollama connection", "status": "UP"}
+    {"name": "Redis connection", "status": "UP"}
   ]
 }
 ```
@@ -491,9 +443,6 @@ docker logs <postgres-container-id>
 
 # View Redis logs
 docker logs <redis-container-id>
-
-# View Ollama logs
-docker logs <ollama-container-id>
 
 # Or use Quarkus Dev UI
 # http://localhost:8080/q/dev
@@ -582,7 +531,7 @@ jobs:
 ### 16.1 Phase 1: MVP (Current)
 - [x] PostgreSQL 16 + pgvector Dev Services
 - [x] Redis Dev Services
-- [x] Ollama Dev Services
+- [x] Mock LLM path for local chat (`use-mock-llm`)
 - [ ] Basic documentation
 - [ ] Developer onboarding guide
 
@@ -605,7 +554,6 @@ jobs:
 - [Quarkus Dev Services Documentation](https://quarkus.io/guides/dev-services)
 - [Testcontainers Documentation](https://www.testcontainers.org/)
 - [pgvector Documentation](https://github.com/pgvector/pgvector)
-- [Ollama Documentation](https://ollama.ai/docs)
 - [ADR-0001: Stack Base](../docs/adr/0001-stack-base.md)
 - [ADR-0002: RAG Vector Store](../docs/adr/0002-rag-vector-store.md)
 - [ADR-0003: LLM Evals](../docs/adr/0003-llm-evals.md)

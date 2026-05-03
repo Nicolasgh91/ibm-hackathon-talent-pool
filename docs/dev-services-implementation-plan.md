@@ -65,7 +65,6 @@ This document provides a complete implementation plan for configuring Quarkus De
   - `quarkus-hibernate-orm-panache`
   - `quarkus-flyway`
   - `quarkus-redis-client`
-  - `quarkus-langchain4j-ollama`
   - `quarkus-langchain4j-openai`
   - `quarkus-smallrye-health`
   - `quarkus-micrometer-registry-prometheus`
@@ -76,7 +75,6 @@ This document provides a complete implementation plan for configuring Quarkus De
 
 - [ ] Create `backend/src/main/java/com/talentpool/health/DatabaseHealthCheck.java`
 - [ ] Create `backend/src/main/java/com/talentpool/health/RedisHealthCheck.java`
-- [ ] Create `backend/src/main/java/com/talentpool/health/OllamaHealthCheck.java`
 - [ ] Create `backend/src/main/java/com/talentpool/metrics/LLMMetrics.java`
 
 ### Phase 5: Testing & Validation (30 minutes)
@@ -85,7 +83,7 @@ This document provides a complete implementation plan for configuring Quarkus De
 - [ ] Test Dev Services startup
 - [ ] Verify PostgreSQL + pgvector
 - [ ] Verify Redis connection
-- [ ] Verify Ollama connection (optional)
+- [ ] Verify chat returns stub when `app.llm.use-mock-llm=true`
 - [ ] Test hot reload
 - [ ] Test Flyway migrations
 
@@ -110,7 +108,6 @@ hackathon/
 │       │   │   ├── health/                        # Health checks
 │       │   │   │   ├── DatabaseHealthCheck.java
 │       │   │   │   ├── RedisHealthCheck.java
-│       │   │   │   └── OllamaHealthCheck.java
 │       │   │   └── metrics/                       # Custom metrics
 │       │   │       └── LLMMetrics.java
 │       │   └── resources/
@@ -165,7 +162,7 @@ Copy the complete configuration from [`configuration-files.md`](./configuration-
 - Metrics (Micrometer + Prometheus)
 - OpenTelemetry (disabled by default)
 - JWT security configuration
-- LangChain4j configuration (OpenAI + Ollama)
+- LangChain4j configuration (OpenAI; mock chat when `use-mock-llm`)
 - Application-specific settings
 
 ### Step 2: Create Development Profile
@@ -180,7 +177,7 @@ Copy the complete configuration from [`configuration-files.md`](./configuration-
 - SQL logging enabled
 - Hot reload enabled
 - Dev UI enabled
-- Ollama as default LLM provider
+- Mock LLM for chat by default (`use-mock-llm`); OpenAI optional
 - Rate limiting disabled
 - Console email provider
 
@@ -235,7 +232,6 @@ Copy the complete configuration from [`configuration-files.md`](./configuration-
 **Services**:
 - PostgreSQL 16 + pgvector
 - Redis 7
-- Ollama (with automatic model pull)
 - pgAdmin (optional, with `--profile tools`)
 
 **Usage**:
@@ -282,10 +278,6 @@ Add the following dependencies:
     </dependency>
     
     <!-- LangChain4j -->
-    <dependency>
-        <groupId>io.quarkiverse.langchain4j</groupId>
-        <artifactId>quarkus-langchain4j-ollama</artifactId>
-    </dependency>
     <dependency>
         <groupId>io.quarkiverse.langchain4j</groupId>
         <artifactId>quarkus-langchain4j-openai</artifactId>
@@ -456,7 +448,6 @@ mvn quarkus:dev
 Expected output:
 - PostgreSQL container started
 - Redis container started
-- Ollama container started (optional)
 - Flyway migrations applied
 - Application started successfully
 
@@ -485,13 +476,9 @@ docker exec -it <redis-container> redis-cli PING
 
 Expected: "PONG"
 
-### ✅ Ollama Model
+### ✅ Chat stub (mock LLM)
 
-```bash
-docker exec -it <ollama-container> ollama list
-```
-
-Expected: llama3.1 model listed
+With `app.llm.use-mock-llm=true`, `POST /api/v1/chat` should return a `[mock-llm]` prefixed body without calling OpenAI.
 
 ### ✅ Hot Reload
 
@@ -544,7 +531,7 @@ Then configure connection strings manually.
 Implementation is successful when:
 
 1. ✅ Developer can run `mvn quarkus:dev` without any manual setup
-2. ✅ All services (PostgreSQL, Redis, Ollama) start automatically
+2. ✅ PostgreSQL and Redis start automatically (Dev Services or Compose)
 3. ✅ Database has all required extensions (pgvector, pgcrypto, citext)
 4. ✅ Flyway migrations run successfully
 5. ✅ Health checks return "UP" for all services
@@ -595,7 +582,6 @@ Implementation is successful when:
 - [Quarkus Dev Services](https://quarkus.io/guides/dev-services)
 - [Testcontainers](https://www.testcontainers.org/)
 - [pgvector Documentation](https://github.com/pgvector/pgvector)
-- [Ollama Documentation](https://ollama.ai/docs)
 - [LangChain4j Quarkus](https://docs.quarkiverse.io/quarkus-langchain4j/dev/)
 
 ---

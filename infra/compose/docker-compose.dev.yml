@@ -59,45 +59,6 @@ services:
     networks:
       - talentpool-network
   
-  # Ollama (Local LLM)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: talentpool-ollama-dev
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 120s
-    networks:
-      - talentpool-network
-  
-  # Ollama Model Puller (runs once to download model)
-  ollama-pull:
-    image: ollama/ollama:latest
-    container_name: talentpool-ollama-pull
-    depends_on:
-      ollama:
-        condition: service_healthy
-    volumes:
-      - ollama-data:/root/.ollama
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        echo "Waiting for Ollama to be ready..."
-        sleep 5
-        echo "Pulling lqwen2.5-coder:1.5b..."
-        ollama pull qwen2.5-coder:1.5b
-        echo "Model pulled successfully!"
-    networks:
-      - talentpool-network
-  
   # pgAdmin (Optional - Database Management UI)
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -122,8 +83,6 @@ volumes:
     name: talentpool-postgres-data
   redis-data:
     name: talentpool-redis-data
-  ollama-data:
-    name: talentpool-ollama-data
   pgadmin-data:
     name: talentpool-pgadmin-data
 

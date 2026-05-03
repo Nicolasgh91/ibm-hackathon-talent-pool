@@ -76,7 +76,7 @@
     │  PostgreSQL 16    │    │  LLM Providers     │
     │  + pgvector 0.7.x │    │  - OpenAI GPT-4    │
     │  + pgcrypto       │    │  - Anthropic Claude│
-    │  + citext         │    │  - Ollama (dev)    │
+    │  + citext         │    │  - Mock LLM (dev)   │
     │                   │    │                    │
     │  20 Tablas:       │    │  via LangChain4j   │
     │  Ver DATABASE.md  │    └────────────────────┘
@@ -834,7 +834,7 @@ El puntaje_total debe ser la suma de los puntajes del desglose (0-100).
   - Input: 4000 tokens max
   - Output: 2000 tokens max para generación, 1500 para evaluación
 - El proveedor LLM se configura por entorno:
-  - `dev`: Ollama local (llama3.1 o mistral)
+  - `dev`: respuestas mock por defecto (`app.llm.use-mock-llm=true`); OpenAI opcional con API key
   - `staging`: OpenAI GPT-4o-mini (costo controlado)
   - `prod`: OpenAI GPT-4o o Anthropic Claude 3.5 Sonnet
 
@@ -860,14 +860,6 @@ quarkus:
         temperature: 0.3  # baja para consistencia
         max-tokens: 2000
         timeout: 15s
-    
-    # Configuración alternativa para Ollama (dev)
-    ollama:
-      base-url: http://localhost:11434
-      chat-model:
-        model-name: llama3.1
-        temperature: 0.3
-        timeout: 30s
 
 # Configuración de costos (para métricas)
 app:
@@ -1048,7 +1040,7 @@ Alternativa complementaria: GitHub CodeQL (gratis para repos públicos y muchos 
 ## 12. estrategia de despliegue
 
 ### 12.1 entornos
-- `local`: docker compose con Postgres + pgvector + Ollama + backend en dev mode + frontend en dev mode
+- `local`: docker compose con Postgres + pgvector + Redis + backend en dev mode + frontend en dev mode
 - `staging`: réplica de producción a menor escala, datos anónimos, proveedor LLM real con presupuesto acotado
 - `production`: real
 

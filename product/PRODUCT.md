@@ -1426,7 +1426,7 @@ Scenario: complete integrator challenge
 - `EVENTO_AUDITORIA` on critical actions
 
 **Concrete MVP limits**:
-- Single LLM provider in production: TBD (Ollama in dev, OpenAI or Anthropic in prod)
+- Single LLM provider in production: TBD (mock chat in local dev by default; OpenAI or Anthropic in prod)
 - Only one programming language per challenge
 - Simple code editor (no advanced syntax highlighting, no autocomplete)
 - Transactional email via simple external provider (SendGrid, Postmark, etc.)
