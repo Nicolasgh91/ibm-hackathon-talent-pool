@@ -12,4 +12,3 @@ public final class PasswordHashCli {
     System.out.println(hasher.hash(password));
   }
 }
-

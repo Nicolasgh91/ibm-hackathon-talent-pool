@@ -1,8 +1,9 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { UserRole } from '@/types'
 import type { ReactNode } from 'react'
+import { studentDemoEnabled } from '@/config/demoFlags'
 
 interface LayoutProps {
   children: ReactNode
@@ -19,6 +20,15 @@ export function Layout({ children }: LayoutProps) {
 
   const getNavigationLinks = () => {
     if (!user) return []
+
+    if (user.rol === UserRole.ESTUDIANTE && studentDemoEnabled()) {
+      return [
+        { to: '/student/dashboard', label: 'Dashboard' },
+        // MVP demo: oculto en nav (curso / repositorio LLM sin backend real). Rutas siguen en App.tsx.
+        // { to: `/student/courses/${DEMO_COURSE_SLUG}`, label: 'Mi curso' },
+        // { to: `/student/courses/${DEMO_COURSE_SLUG}/repository`, label: 'Repositorio' },
+      ]
+    }
 
     const commonLinks = [
       { to: '/dashboard', label: 'Dashboard' },
@@ -47,28 +57,45 @@ export function Layout({ children }: LayoutProps) {
 
   const navigationLinks = getNavigationLinks()
 
+  const logoTo =
+    user?.rol === UserRole.ESTUDIANTE && studentDemoEnabled()
+      ? '/student/dashboard'
+      : '/dashboard'
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="border-b border-gray-200 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               {/* Logo */}
-              <Link to="/dashboard" className="flex items-center">
-                <span className="text-2xl font-bold text-blue-600">Talent Pool</span>
+              <Link to={logoTo} className="flex items-center gap-2">
+                <span
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-lg font-bold text-white"
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                <span className="text-2xl font-bold text-primary-700">Talent Pool</span>
               </Link>
 
               {/* Navigation Links */}
-              <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
+              <div className="hidden sm:ml-8 sm:flex sm:space-x-2">
                 {navigationLinks.map((link) => (
-                  <Link
+                  <NavLink
                     key={link.to}
                     to={link.to}
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                    className={({ isActive }) =>
+                      `inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                      }`
+                    }
                   >
                     {link.label}
-                  </Link>
+                  </NavLink>
                 ))}
               </div>
             </div>
@@ -98,13 +125,19 @@ export function Layout({ children }: LayoutProps) {
         <div className="sm:hidden border-t border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navigationLinks.map((link) => (
-              <Link
+              <NavLink
                 key={link.to}
                 to={link.to}
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                className={({ isActive }) =>
+                  `block px-3 py-2 text-base font-medium rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                  }`
+                }
               >
                 {link.label}
-              </Link>
+              </NavLink>
             ))}
           </div>
         </div>

@@ -8,14 +8,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Response DTOs for evaluation operations.
- */
+/** Response DTOs for evaluation operations. */
 public class EvaluacionResponse {
 
-  /**
-   * Basic evaluation response (for submission).
-   */
+  /** Basic evaluation response (for submission). */
   public record EvaluacionBasic(
       UUID id,
       UUID desafioId,
@@ -24,8 +20,7 @@ public class EvaluacionResponse {
       BigDecimal puntajeTotal,
       Instant inicio,
       Instant entrega,
-      Instant evaluadoEn
-  ) {
+      Instant evaluadoEn) {
     public static EvaluacionBasic from(Evaluacion evaluacion) {
       return new EvaluacionBasic(
           evaluacion.id,
@@ -35,14 +30,11 @@ public class EvaluacionResponse {
           evaluacion.puntajeTotal,
           evaluacion.inicio,
           evaluacion.entrega,
-          evaluacion.evaluadoEn
-      );
+          evaluacion.evaluadoEn);
     }
   }
 
-  /**
-   * Detailed evaluation response (with dimensions and feedback).
-   */
+  /** Detailed evaluation response (with dimensions and feedback). */
   public record EvaluacionDetail(
       UUID id,
       UUID desafioId,
@@ -56,41 +48,25 @@ public class EvaluacionResponse {
       Integer minutosEmpleados,
       Instant inicio,
       Instant entrega,
-      Instant evaluadoEn
-  ) {}
+      Instant evaluadoEn) {}
 
-  /**
-   * Dimension score details.
-   */
+  /** Dimension score details. */
   public record DimensionResponse(
-      String nombre,
-      BigDecimal puntaje,
-      BigDecimal peso,
-      String justificacion
-  ) {
+      String nombre, BigDecimal puntaje, BigDecimal peso, String justificacion) {
     public static DimensionResponse from(DimensionPuntaje dimension) {
       return new DimensionResponse(
-          dimension.nombre,
-          dimension.puntaje,
-          dimension.peso,
-          dimension.justificacion
-      );
+          dimension.nombre, dimension.puntaje, dimension.peso, dimension.justificacion);
     }
   }
 
-  /**
-   * Ranking response for a position.
-   */
+  /** Ranking response for a position. */
   public record RankingResponse(
       UUID puestoId,
       String puestoTitulo,
       int totalCandidatos,
-      List<CandidateRankingEntry> ranking
-  ) {}
+      List<CandidateRankingEntry> ranking) {}
 
-  /**
-   * Individual candidate ranking entry.
-   */
+  /** Individual candidate ranking entry. */
   public record CandidateRankingEntry(
       int posicion,
       UUID candidatoId,
@@ -99,8 +75,16 @@ public class EvaluacionResponse {
       BigDecimal puntajeTotal,
       List<DimensionResponse> dimensiones,
       Integer minutosEmpleados,
-      Instant evaluadoEn
-  ) {}
+      Instant evaluadoEn) {}
+
+  /** Aggregated ranking row aligned with the SPA mock shape (GET /evaluations/rankings). */
+  public record GlobalCandidateRanking(
+      UUID candidatoId,
+      String candidatoNombre,
+      String candidatoEmail,
+      double puntajePromedio,
+      int evaluacionesCompletadas,
+      Instant ultimaEvaluacion) {}
 }
 
 // Made with Bob

@@ -176,7 +176,7 @@ Copy the complete configuration from [`configuration-files.md`](./configuration-
 
 **Key features**:
 - Dev Services enabled for PostgreSQL, Redis
-- Verbose logging (DEBUG level)
+- Logging: root `INFO`, categorías clave en `DEBUG`/`TRACE`
 - SQL logging enabled
 - Hot reload enabled
 - Dev UI enabled

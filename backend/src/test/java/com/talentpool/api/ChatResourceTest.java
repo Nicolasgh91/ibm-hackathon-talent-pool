@@ -21,10 +21,12 @@ import org.junit.jupiter.api.Test;
 class ChatResourceTest {
 
   private static final String CHAT_ENDPOINT = "/api/v1/chat";
-  private static final UUID TEST_USER_ID = UUID.randomUUID();
+
+  /** Must be a valid UUID string (parsed by ChatResource as user id). */
+  private static final String TEST_USER_SUBJECT = "a0000000-0000-0000-0000-000000000001";
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatSuccess() {
     given()
         .contentType(ContentType.JSON)
@@ -42,7 +44,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatWithConversationId() {
     String conversationId = UUID.randomUUID().toString();
 
@@ -57,7 +59,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatEmptyMessage() {
     given()
         .contentType(ContentType.JSON)
@@ -69,7 +71,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatMessageTooLong() {
     String longMessage = "a".repeat(2001);
 
@@ -83,7 +85,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatPromptInjection() {
     given()
         .contentType(ContentType.JSON)
@@ -96,7 +98,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatSqlInjection() {
     given()
         .contentType(ContentType.JSON)
@@ -108,7 +110,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatXssAttempt() {
     given()
         .contentType(ContentType.JSON)
@@ -131,7 +133,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatRateLimiting() {
     // Make 10 successful requests (at the limit)
     for (int i = 0; i < 10; i++) {
@@ -158,7 +160,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatHealthEndpoint() {
     given()
         .when()
@@ -170,7 +172,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatValidationBlankMessage() {
     given()
         .contentType(ContentType.JSON)
@@ -182,7 +184,7 @@ class ChatResourceTest {
   }
 
   @Test
-  @TestSecurity(user = "test-user-id", roles = "user")
+  @TestSecurity(user = TEST_USER_SUBJECT, roles = "user")
   void testChatMaxLengthBoundary() {
     // Exactly 2000 characters should be accepted
     String message = "a".repeat(2000);

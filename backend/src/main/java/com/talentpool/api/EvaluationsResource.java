@@ -8,6 +8,7 @@ import com.talentpool.domain.Desafio;
 import com.talentpool.domain.DimensionPuntaje;
 import com.talentpool.domain.Evaluacion;
 import com.talentpool.domain.Usuario;
+import com.talentpool.infrastructure.security.JwtTokenService;
 import com.talentpool.service.EvaluacionService;
 import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.PermitAll;
@@ -19,8 +20,11 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +44,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 public class EvaluationsResource {
 
   @Inject EvaluacionService evaluacionService;
+  @Inject JwtTokenService jwtTokenService;
 
   @POST
   @PermitAll
@@ -50,11 +55,60 @@ public class EvaluationsResource {
   })
   public Response submit(@Valid SubmitEvaluationRequest request) {
     Evaluacion evaluacion = evaluacionService.submitForEvaluation(request);
-    return Response.accepted(Map.of(
-            "evaluacionId", evaluacion.id,
-            "estado", evaluacion.estado,
-            "estimacionSegundos", 15))
+    return Response.accepted(
+            Map.of(
+                "evaluacionId", evaluacion.id,
+                "estado", evaluacion.estado,
+                "estimacionSegundos", 15))
         .build();
+  }
+
+  @GET
+  @Authenticated
+  @Operation(summary = "List evaluations (optional filter by assignment)")
+  @APIResponses({
+    @APIResponse(responseCode = "200", description = "Evaluations listed"),
+    @APIResponse(responseCode = "401", description = "Unauthorized")
+  })
+  public Response list(@QueryParam("asignacionId") UUID asignacionId) {
+    List<Evaluacion> list = evaluacionService.listByAsignacionIdOptional(asignacionId);
+    return Response.ok(list.stream().map(EvaluacionBasic::from).toList()).build();
+  }
+
+  @GET
+  @Path("/rankings")
+  @Authenticated
+  @Operation(summary = "Global aggregated candidate rankings")
+  @APIResponse(responseCode = "200", description = "Rankings")
+  public Response globalRankings() {
+    return Response.ok(evaluacionService.aggregateGlobalRankings()).build();
+  }
+
+  @GET
+  @Path("/my-evaluations")
+  @Authenticated
+  @Operation(summary = "Evaluations for the authenticated candidate")
+  @APIResponse(responseCode = "200", description = "Evaluations")
+  public Response myEvaluations(@Context SecurityContext securityContext) {
+    UUID userId = jwtTokenService.parseUserId(securityContext.getUserPrincipal().getName());
+    List<Evaluacion> list = evaluacionService.listForCandidato(userId);
+    return Response.ok(list.stream().map(EvaluacionBasic::from).toList()).build();
+  }
+
+  @GET
+  @Path("/assignment/{asignacionId}")
+  @Authenticated
+  @Operation(summary = "Latest evaluation for an assignment")
+  @APIResponses({
+    @APIResponse(responseCode = "200", description = "Evaluation found"),
+    @APIResponse(responseCode = "404", description = "Not found")
+  })
+  public Response byAssignment(@PathParam("asignacionId") UUID asignacionId) {
+    Evaluacion e = evaluacionService.findLatestByAsignacion(asignacionId);
+    if (e == null) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+    return evaluationDetailResponse(e);
   }
 
   @GET
@@ -71,30 +125,38 @@ public class EvaluationsResource {
   })
   public Response byId(@PathParam("id") UUID evaluacionId) {
     Evaluacion evaluacion = evaluacionService.findById(evaluacionId);
+    return evaluationDetailResponse(evaluacion);
+  }
+
+  private Response evaluationDetailResponse(Evaluacion evaluacion) {
     if (!"EVALUADA".equals(evaluacion.estado)) {
       return Response.ok(EvaluacionBasic.from(evaluacion)).build();
     }
 
     Desafio desafio = Desafio.findByIdOptional(evaluacion.desafioId);
     Usuario candidato = Usuario.findByIdOptional(evaluacion.candidatoId);
-    List<DimensionResponse> dimensiones = DimensionPuntaje.findByEvaluacion(evaluacion.id).stream()
-        .map(DimensionResponse::from)
-        .toList();
+    List<DimensionResponse> dimensiones =
+        DimensionPuntaje.findByEvaluacion(evaluacion.id).stream()
+            .map(DimensionResponse::from)
+            .toList();
 
-    EvaluacionDetail detail = new EvaluacionDetail(
-        evaluacion.id,
-        evaluacion.desafioId,
-        desafio != null ? desafio.titulo : null,
-        evaluacion.candidatoId,
-        candidato != null ? candidato.email : null,
-        evaluacion.estado,
-        evaluacion.puntajeTotal,
-        dimensiones,
-        evaluacion.reporteFeedback,
-        evaluacion.minutosEmpleados != null ? evaluacion.minutosEmpleados : computeMinutes(evaluacion),
-        evaluacion.inicio,
-        evaluacion.entrega,
-        evaluacion.evaluadoEn);
+    EvaluacionDetail detail =
+        new EvaluacionDetail(
+            evaluacion.id,
+            evaluacion.desafioId,
+            desafio != null ? desafio.titulo : null,
+            evaluacion.candidatoId,
+            candidato != null ? candidato.email : null,
+            evaluacion.estado,
+            evaluacion.puntajeTotal,
+            dimensiones,
+            evaluacion.reporteFeedback,
+            evaluacion.minutosEmpleados != null
+                ? evaluacion.minutosEmpleados
+                : computeMinutes(evaluacion),
+            evaluacion.inicio,
+            evaluacion.entrega,
+            evaluacion.evaluadoEn);
     return Response.ok(detail).build();
   }
 
@@ -103,4 +165,3 @@ public class EvaluationsResource {
     return (int) Duration.between(evaluacion.inicio, end).toMinutes();
   }
 }
-

@@ -256,7 +256,7 @@ public class DesafioServiceIT {
 
 **Characteristics**:
 - Automatic service provisioning
-- Verbose logging (DEBUG level)
+- Logging: root `INFO`, categorías clave en `DEBUG`/`TRACE` (evita ruido del JDK en consola)
 - Hot reload enabled
 - No authentication required for local services
 - Seed data included
@@ -609,6 +609,7 @@ jobs:
 - [ADR-0001: Stack Base](../docs/adr/0001-stack-base.md)
 - [ADR-0002: RAG Vector Store](../docs/adr/0002-rag-vector-store.md)
 - [ADR-0003: LLM Evals](../docs/adr/0003-llm-evals.md)
+- [ADR-0008: asignación costos LLM roadmap práctica (UC-024)](../docs/adr/0008-asignacion-costos-llm-roadmap-practica.md)
 
 ---
 

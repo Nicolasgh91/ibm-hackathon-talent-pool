@@ -18,7 +18,7 @@ export const challengeService = {
   },
 
   async generate(data: GenerateChallengeRequest): Promise<Challenge> {
-    const response = await api.post<Challenge>('/challenges/generate', data)
+    const response = await api.post<Challenge>('/challenges', data)
     return response.data
   },
 

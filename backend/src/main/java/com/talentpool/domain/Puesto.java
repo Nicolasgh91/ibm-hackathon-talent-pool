@@ -1,10 +1,13 @@
 package com.talentpool.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.vertx.core.json.JsonArray;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Puesto entity - Job position for corporate recruiting.
@@ -37,6 +40,21 @@ public class Puesto extends PanacheEntityBase {
   @Column(columnDefinition = "TEXT")
   public String descripcion;
 
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(nullable = false, columnDefinition = "jsonb")
+  public JsonArray herramientas = new JsonArray();
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "skills_tecnicas", nullable = false, columnDefinition = "jsonb")
+  public JsonArray skillsTecnicas = new JsonArray();
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "skills_blandas", nullable = false, columnDefinition = "jsonb")
+  public JsonArray skillsBlandas = new JsonArray();
+
+  @Column(name = "roadmap_publico_habilitado", nullable = false)
+  public Boolean roadmapPublicoHabilitado = true;
+
   @Column(nullable = false, length = 20)
   public String estado = "BORRADOR"; // BORRADOR, ABIERTO, PAUSADO, CERRADO
 
@@ -50,6 +68,18 @@ public class Puesto extends PanacheEntityBase {
   protected void onCreate() {
     if (id == null) {
       id = UUID.randomUUID();
+    }
+    if (herramientas == null) {
+      herramientas = new JsonArray();
+    }
+    if (skillsTecnicas == null) {
+      skillsTecnicas = new JsonArray();
+    }
+    if (skillsBlandas == null) {
+      skillsBlandas = new JsonArray();
+    }
+    if (roadmapPublicoHabilitado == null) {
+      roadmapPublicoHabilitado = true;
     }
     createdAt = Instant.now();
     updatedAt = Instant.now();
@@ -72,5 +102,3 @@ public class Puesto extends PanacheEntityBase {
     return list("organizacionId = ?1 and estado = 'ABIERTO'", organizacionId);
   }
 }
-
-// Made with Bob

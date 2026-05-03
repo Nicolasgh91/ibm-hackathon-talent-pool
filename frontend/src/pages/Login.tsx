@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { toast } from 'sonner'
 import type { ApiError } from '@/types'
+import { authService } from '@/services/authService'
+import { getHomePathForRole } from '@/utils/authRedirects'
+import { devLoginHintsEnabled } from '@/config/demoFlags'
+import { DevLoginCredentialsCard } from '@/components/dev/DevLoginCredentialsCard'
 
 export function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -47,7 +52,11 @@ export function Login() {
     try {
       await login(formData)
       toast.success('Login successful!')
-      navigate('/dashboard')
+      const u = authService.getUser()
+      const redirectTo = searchParams.get('redirect')
+      const next =
+        redirectTo && redirectTo.startsWith('/') ? redirectTo : u ? getHomePathForRole(u.rol) : '/dashboard'
+      navigate(next)
     } catch (error) {
       const apiError = error as ApiError
       toast.error(apiError.message || 'Login failed. Please try again.')
@@ -69,7 +78,7 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Talent Pool</h1>
+          <h1 className="text-4xl font-bold text-primary-700 mb-2">Talent Pool</h1>
           <p className="text-gray-600">AI-powered technical challenges</p>
         </div>
         
@@ -118,7 +127,7 @@ export function Login() {
                 Don't have an account?{' '}
                 <Link
                   to="/register"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="font-medium text-teal-600 hover:text-teal-500"
                 >
                   Sign up
                 </Link>
@@ -126,6 +135,16 @@ export function Login() {
             </div>
           </CardContent>
         </Card>
+
+        {devLoginHintsEnabled() && (
+          <DevLoginCredentialsCard
+            onPick={({ email, password, rol }) => {
+              authService.saveRoleForEmail(email, rol)
+              setFormData({ email, password })
+              setErrors({})
+            }}
+          />
+        )}
       </div>
     </div>
   )

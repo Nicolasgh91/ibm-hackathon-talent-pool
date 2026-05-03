@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Talent Pool API (contract sketch)
+  version: 0.1.0
+  description: >
+    Living contract sketch aligned with Quarkus resources under backend/src/main/java/com/talentpool/api/.
+    Regenerate TS types with `npm run openapi:types` from `frontend/`.
+servers:
+  - url: /api/v1
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      responses:
+        '200':
+          description: OK
+  /auth/register:
+    post:
+      summary: Register
+      responses:
+        '201':
+          description: Created
+  /positions:
+    get:
+      summary: List positions
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create position
+      responses:
+        '201':
+          description: Created
+  /positions/{id}:
+    get:
+      summary: Get position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update position
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Delete position
+      responses:
+        '204':
+          description: No Content
+  /positions/{id}/ranking:
+    get:
+      summary: Ranking by position
+      responses:
+        '200':
+          description: OK
+  /challenges:
+    get:
+      summary: List challenges
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Generate challenge
+      responses:
+        '201':
+          description: Created
+  /evaluations:
+    get:
+      summary: List evaluations
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Submit evaluation
+      responses:
+        '202':
+          description: Accepted
+  /invitations/by-token/{token}:
+    get:
+      summary: Invitation by token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /chat:
+    post:
+      summary: Chat message
+      responses:
+        '200':
+          description: OK

@@ -17,7 +17,8 @@ quarkus:
     host: 0.0.0.0
     cors:
       ~: true
-      origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+      # localhost vs 127.0.0.1 are distinct Origins; include both for Vite/React dev.
+      origins: ${CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000}
       methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
       headers: accept,authorization,content-type,x-requested-with
       exposed-headers: Content-Disposition
@@ -33,10 +34,14 @@ quarkus:
   log:
     level: INFO
     category:
-      "com.talentpool": INFO
-      "io.quarkus": INFO
-      "org.hibernate": WARN
-      "org.flywaydb": INFO
+      com.talentpool:
+        level: INFO
+      io.quarkus:
+        level: INFO
+      org.hibernate:
+        level: WARN
+      org.flywaydb:
+        level: INFO
     console:
       enable: true
       format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"
@@ -164,14 +169,11 @@ quarkus:
     traces:
       sampler: parentbased_always_on
 
-# =============================================================================
-# LangChain4j Configuration
-# =============================================================================
-quarkus:
+  # LangChain4j: do not set quarkus.langchain4j.openai.api-key here with a default of "" — SmallRye rejects it.
+  # supply OPENAI via application-prod.yml when using the OpenAI provider; dev profile disables the integration.
   langchain4j:
     chat-model:
       provider: ${LANGCHAIN_PROVIDER:ollama}
-    # Default provider (overridden by profile)
     ollama:
       chat-model:
         model-id: qwen2.5-coder:1.5b
@@ -180,9 +182,7 @@ quarkus:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       log-requests: false
       log-responses: false
-    
     openai:
-      api-key: ${OPENAI_API_KEY:}
       chat-model:
         model-name: gpt-4o-mini
         temperature: 0.3

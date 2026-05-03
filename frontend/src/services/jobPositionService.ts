@@ -1,5 +1,5 @@
 import api from './api'
-import type { JobPosition, CreateJobPositionRequest } from '@/types'
+import type { JobPosition, CreateJobPositionRequest, PositionRankingWire } from '@/types'
 
 export const jobPositionService = {
   async getAll(organizacionId?: string): Promise<JobPosition[]> {
@@ -34,6 +34,12 @@ export const jobPositionService = {
 
   async deactivate(id: string): Promise<JobPosition> {
     const response = await api.post<JobPosition>(`/positions/${id}/deactivate`)
+    return response.data
+  },
+
+  /** GET /positions/:id/ranking (backend + mock). */
+  async getRankingWire(puestoId: string): Promise<PositionRankingWire> {
+    const response = await api.get<PositionRankingWire>(`/positions/${puestoId}/ranking`)
     return response.data
   },
 }

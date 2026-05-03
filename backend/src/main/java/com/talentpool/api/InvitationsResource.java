@@ -17,7 +17,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -54,26 +53,32 @@ public class InvitationsResource {
     if (desafio == null) {
       return Response.status(Response.Status.NOT_FOUND).entity("Challenge not found").build();
     }
-    Puesto puesto = asignacion.puestoId != null ? Puesto.findByIdOptional(asignacion.puestoId) : null;
-    Organizacion organizacion = desafio.organizacionId != null
-        ? Organizacion.findByIdOptional(desafio.organizacionId)
-        : null;
-    InvitationDetailsResponse response = new InvitationDetailsResponse(
-        invitacion.id,
-        invitacion.emailInvitado,
-        organizacion != null ? organizacion.nombre : null,
-        invitacion.estado,
-        invitacion.expiraEn,
-        invitacion.isValid(),
-        new DesafioPublicResponse(
-            desafio.id,
-            desafio.titulo,
-            desafio.enunciado,
-            desafio.tecnologia,
-            desafio.seniority,
-            desafio.minutosEstimados),
-        puesto == null ? null : new PuestoPublicResponse(puesto.titulo, puesto.tecnologiaPrincipal, puesto.seniority));
+    Puesto puesto =
+        asignacion.puestoId != null ? Puesto.findByIdOptional(asignacion.puestoId) : null;
+    Organizacion organizacion =
+        desafio.organizacionId != null
+            ? Organizacion.findByIdOptional(desafio.organizacionId)
+            : null;
+    InvitationDetailsResponse response =
+        new InvitationDetailsResponse(
+            invitacion.id,
+            invitacion.asignacionId,
+            invitacion.emailInvitado,
+            organizacion != null ? organizacion.nombre : null,
+            invitacion.estado,
+            invitacion.expiraEn,
+            invitacion.isValid(),
+            new DesafioPublicResponse(
+                desafio.id,
+                desafio.titulo,
+                desafio.enunciado,
+                desafio.tecnologia,
+                desafio.seniority,
+                desafio.minutosEstimados),
+            puesto == null
+                ? null
+                : new PuestoPublicResponse(
+                    puesto.titulo, puesto.tecnologiaPrincipal, puesto.seniority));
     return Response.ok(response).build();
   }
 }
-

@@ -3,9 +3,7 @@ package com.talentpool.api.exception;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-/**
- * Exception thrown when an invitation is invalid, expired, or already used.
- */
+/** Exception thrown when an invitation is invalid, expired, or already used. */
 public class InvalidInvitationException extends WebApplicationException {
 
   public InvalidInvitationException(String reason) {

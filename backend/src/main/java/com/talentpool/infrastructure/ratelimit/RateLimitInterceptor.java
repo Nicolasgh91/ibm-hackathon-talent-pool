@@ -57,9 +57,7 @@ public class RateLimitInterceptor {
 
     // Determine key prefix
     String keyPrefix =
-        annotation.keyPrefix().isEmpty()
-            ? context.getMethod().getName()
-            : annotation.keyPrefix();
+        annotation.keyPrefix().isEmpty() ? context.getMethod().getName() : annotation.keyPrefix();
 
     // Check rate limit
     boolean allowed =

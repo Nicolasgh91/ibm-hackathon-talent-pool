@@ -33,8 +33,7 @@ public class Membresia extends PanacheEntityBase {
   @Column(nullable = false)
   public Instant inicio;
 
-  @Column
-  public Instant fin;
+  @Column public Instant fin;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   public Instant createdAt;
@@ -60,13 +59,20 @@ public class Membresia extends PanacheEntityBase {
   }
 
   public static Membresia findActiveByUserAndOrg(UUID usuarioId, UUID organizacionId) {
-    return find("usuarioId = ?1 and organizacionId = ?2 and estado = 'ACTIVA'", usuarioId, organizacionId)
+    return find(
+            "usuarioId = ?1 and organizacionId = ?2 and estado = 'ACTIVA'",
+            usuarioId,
+            organizacionId)
         .firstResult();
   }
 
   public static boolean hasActiveRole(UUID usuarioId, UUID organizacionId, String rol) {
-    return count("usuarioId = ?1 and organizacionId = ?2 and rol = ?3 and estado = 'ACTIVA'", 
-        usuarioId, organizacionId, rol) > 0;
+    return count(
+            "usuarioId = ?1 and organizacionId = ?2 and rol = ?3 and estado = 'ACTIVA'",
+            usuarioId,
+            organizacionId,
+            rol)
+        > 0;
   }
 }
 

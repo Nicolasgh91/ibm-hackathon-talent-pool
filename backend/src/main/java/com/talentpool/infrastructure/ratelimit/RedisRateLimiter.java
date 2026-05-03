@@ -4,9 +4,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.annotation.PostConstruct;
 import java.util.UUID;
 
 /**
@@ -28,10 +28,8 @@ public class RedisRateLimiter {
 
   private ValueCommands<String, Integer> valueCommands;
 
-  /**
-   * Initialize Redis commands on startup.
-   */
- @PostConstruct
+  /** Initialize Redis commands on startup. */
+  @PostConstruct
   void init() {
     valueCommands = redisDataSource.value(Integer.class);
     Log.info("RedisRateLimiter initialized");
@@ -75,8 +73,7 @@ public class RedisRateLimiter {
 
       // Rate limit exceeded
       recordDenied(keyPrefix);
-      Log.warnf(
-          "Rate limit exceeded for key %s - count: %d, limit: %d", key, currentCount, limit);
+      Log.warnf("Rate limit exceeded for key %s - count: %d, limit: %d", key, currentCount, limit);
       return false;
 
     } catch (Exception e) {

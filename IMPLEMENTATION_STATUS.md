@@ -1,256 +1,89 @@
-# Implementation Status - Talent Pool Backend
+# Implementation Status — Talent Pool
 
-**Date**: 2026-05-02  
-**Phase**: Hackathon Demo Sprint (REST flow enabled)
+**Last updated**: 2026-05-03
 
----
+**Canonical phase checklist**: Use [`product/ROADMAP.md`](product/ROADMAP.md) (Phases 0–1) for `[x]` / `[~]` / `[ ]` audit state. This file summarizes implementation highlights and pointers to code.
 
-## 🚀 Demo Sprint Update (2026-05-02)
+## MVP closure (in flight)
 
-### Backend demo-ready scope completed
-- ✅ Added REST resources for:
-  - `POST /api/v1/positions`
-  - `POST /api/v1/challenges`
-  - `POST /api/v1/challenges/{id}/invitations`
-  - `GET /api/v1/invitations/by-token/{token}`
-  - `POST /api/v1/evaluations` (token-based public submit for demo)
-  - `GET /api/v1/evaluations/{id}`
-  - `GET /api/v1/positions/{id}/ranking`
-- ✅ Enabled mock-driven challenge generation and async evaluation flow.
-- ✅ Added demo CORS + timeout + mock-llm flag configuration.
-- ✅ Updated seed migration with valid argon2id hash for `Demo123!`.
-- ✅ Project compiles successfully (`./mvnw -DskipTests compile`).
-- ✅ Smoke de flujo REST (Java): `com.talentpool.tools.DemoSmokeClient` vía `exec-maven-plugin` (ver `docs/runbooks/demo-smoke-flow.md`).
+A phased plan to close ROADMAP Phase 1+2 DoD lives at `.cursor/plans/backend_mvp_closure_*.plan.md`. Status:
 
-### Pending for full end-to-end verification
-- ⏳ Ejecutar `cd backend && ./mvnw -q compile exec:java` con API y DB en marcha; luego probar con frontend en `http://localhost:5173`.
-- ⏳ Run integration tests once Docker/Testcontainers environment is healthy.
+- **Phase A — Schema & domain gaps**: complete. V016..V021 applied (`herramientas`/`skills_*`/`roadmap_publico_habilitado` on `puestos`; `plan_evaluacion_id`/`tipo_desafio`/`peso`/`cursos_integrados` on `desafios`; new `evaluaciones_versiones`, `llamadas_llm`, `eventos_auditoria` tables; `evaluador_codigo` and `juez_evals` prompt versions seeded). New Panache entities + insert-only `LlamadaLlmService` and `AuditService`. `PhaseASchemaTest` (5/5 green).
+- **Phase B — Real LLM wiring**: pending.
+- **Phase C — Auth & identity**: pending.
+- **Phase D — Challenge & evaluation flow**: pending.
+- **Phase E — Observability & evals**: pending.
+- **Phase F — Tests, CI, security gates**: pending.
 
 ---
 
-## ✅ Phase 0: Foundations (COMPLETE)
+## Phase 0 — Foundations (mostly complete)
 
-### Backend Structure
-- ✅ **pom.xml** - Quarkus 3.17.5 + LangChain4j + all dependencies
-- ✅ **Maven wrapper** - mvnw and mvnw.cmd for cross-platform builds
-- ✅ **Package structure**:
-  - `com.talentpool.api` - REST endpoints
-  - `com.talentpool.api.dto` - Request/Response DTOs
-  - `com.talentpool.domain` - JPA entities
-  - `com.talentpool.service` - Business logic
-  - `com.talentpool.infrastructure.security` - Security utilities
+What matches the roadmap:
 
-### Database
-- ✅ **V001__create_extensions.sql** - PostgreSQL extensions (uuid-ossp, pgcrypto, citext, vector)
-- ✅ **V002__create_usuarios.sql** - Users table with triggers and indexes
-- ✅ **Flyway** configured for automatic migrations
+- **Backend**: Quarkus 3.17.x, LangChain4j, Flyway (migrations through demo schema), Maven wrapper, Spotless (Google Java Format), profiles `dev` / `test` / `prod`, SmallRye OpenAPI, health + Prometheus metrics, `@QuarkusTest` (`HealthCheckTest`, `AuthResourceTest`, `ChatResourceTest`).
+- **Frontend**: Vite + React + TypeScript, ESLint + Prettier + Husky, axios-based API client; script `npm run openapi:types` genera `frontend/src/types/api.gen.ts` desde [`api/openapi.yaml`](../api/openapi.yaml) (YAML maestro incremental).
+- **Compose (dev)**: [`infra/compose/docker-compose.dev.yml`](infra/compose/docker-compose.dev.yml) — PostgreSQL (pgvector), Redis, Ollama (no backend/frontend services).
+- **Docs**: [`CHANGELOG.md`](CHANGELOG.md), [`TECH_DEBT.md`](TECH_DEBT.md), ADRs in [`docs/adr/`](docs/adr/).
 
-### Security
-- ✅ **JWT Keys** - RSA 2048-bit keys generated (privateKey.pem, publicKey.pem)
-- ✅ **PasswordHasher** - Argon2id implementation with configurable parameters
-- ✅ **JwtTokenService** - Access token (15 min) + Refresh token (7 days)
-- ✅ **Configuration** - JWT settings in application.yml
+Still open vs roadmap: **GitHub Actions CI**, **Dockerfiles** for JVM backend / nginx frontend, **full-stack compose** with app containers, **SonarCloud**, **staging** HTTPS, **openapi-typescript** pipeline, **MockChatModel** tests, dedicated **health check page** in the SPA.
 
-### Testing
-- ✅ **HealthCheckTest** - Verifies Quarkus health endpoints
-- ✅ **AuthResourceTest** - Integration tests for UC-001 and UC-002
+**Organizations (UC-004)**: `GET/POST/PUT/DELETE /api/v1/organizations` implemented ([`OrganizationsResource`](backend/src/main/java/com/talentpool/api/OrganizationsResource.java), [`OrganizacionService`](backend/src/main/java/com/talentpool/service/OrganizacionService.java)). JWT user id is read from `JsonWebToken.getSubject()` (same as `GET /auth/me`). Flyway **V015** adds nullable `organizaciones.descripcion` for the SPA form. Delete is **OWNER-only** and blocked with **409** if the org still has job positions.
 
 ---
 
-## ✅ Phase 1: Authentication (COMPLETE)
+## Phase 1 — Walking Skeleton (partial)
 
-### UC-001: Register User
-**Endpoint**: `POST /api/v1/auth/register`
+### Authentication (done)
 
-**Implementation**:
-- ✅ RegisterRequest DTO with validation
-- ✅ Email uniqueness check (case-insensitive)
-- ✅ Argon2id password hashing
-- ✅ JWT token generation
-- ✅ Returns AuthResponse with tokens
+- `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, **`GET /api/v1/auth/me`** (roadmap text said `/users/me`; same behavior).
+- Argon2id + JWT — see [`AuthResource`](backend/src/main/java/com/talentpool/api/AuthResource.java), [`AuthService`](backend/src/main/java/com/talentpool/service/AuthService.java).
 
-**Tests**:
-- ✅ Successful registration
-- ✅ Duplicate email rejection
-- ✅ Invalid email validation
-- ✅ Password length validation
+### Chat API (done)
 
-### UC-002: Login
-**Endpoint**: `POST /api/v1/auth/login`
+- `POST /api/v1/chat` with LangChain4j, [`InputGuardrailService`](backend/src/main/java/com/talentpool/infrastructure/security/InputGuardrailService.java), Redis [**RedisRateLimiter**](backend/src/main/java/com/talentpool/infrastructure/ratelimit/RedisRateLimiter.java) (10/min), Micrometer + MDC correlation in [`ChatService`](backend/src/main/java/com/talentpool/service/ChatService.java).
 
-**Implementation**:
-- ✅ LoginRequest DTO with validation
-- ✅ Case-insensitive email lookup
-- ✅ Argon2id password verification
-- ✅ JWT token generation
-- ✅ Returns AuthResponse with tokens
+### Frontend auth + app shell (done / evolved)
 
-**Tests**:
-- ✅ Successful login
-- ✅ Invalid password rejection
-- ✅ Non-existent user rejection
+- [`Register.tsx`](frontend/src/pages/Register.tsx), [`Login.tsx`](frontend/src/pages/Login.tsx), [`AuthContext.tsx`](frontend/src/contexts/AuthContext.tsx), [`api.ts`](frontend/src/services/api.ts) interceptors.
+- **Student (Phase 5 demo, mock)**: rutas [`/student/dashboard`](frontend/src/App.tsx) → curso → repositorio → nueva consulta / detalle; datos en [`studentCourseMock.ts`](frontend/src/mocks/studentCourseMock.ts); desactivar UI con `VITE_ENABLE_STUDENT_DEMO=false`.
+- **No** Phase-1-only **`/home` chat UI** or **`ChatContext`** — product evolved to hackathon flows ([`Dashboard.tsx`](frontend/src/pages/Dashboard.tsx), challenges, evaluations).
+- Refresh tokens are **stored**; backend **refresh endpoint not implemented** — 401 clears local session.
 
-### GET /api/v1/auth/me
-**Endpoint**: `GET /api/v1/auth/me`
+### Still open vs Phase 1 roadmap
 
-**Implementation**:
-- ✅ JWT authentication required
-- ✅ Extracts user ID from JWT subject
-- ✅ Returns UsuarioResponse
-
-**Tests**:
-- ✅ Authenticated access
-- ✅ Unauthenticated rejection
+- **LLM eval suite** at 100% in CI (YAML dataset + Maven `evals` profile exist; executable Java eval tests not complete).
+- **Grafana / alerting**, **E2E in CI** (Playwright configured but no committed specs), **JWT refresh API**, **React Error Boundaries**, **loading skeletons** as listed in ROADMAP.
 
 ---
 
-## ⏳ Phase 1: Remaining Tasks
+## Hackathon demo scope (beyond Phase 1)
 
-### Chat with LLM (Not Started)
-- [ ] POST /api/v1/chat endpoint
-- [ ] LangChain4j ChatLanguageModel integration
-- [ ] Input guardrails (max 2000 chars, injection detection)
-- [ ] Redis rate limiter (10 req/min per user)
-- [ ] Structured logging with correlation IDs
-- [ ] Metrics (tokens, cost, latency)
-- [ ] OpenTelemetry traces
+REST resources for **organizations**, positions (CRUD + ranking), challenges (list + detail + generate + invitations), **assignments** (`AssignmentsResource`), evaluations (list + rankings + my-evaluations), invitations by token, chat — ver [`docs/api-contract-status.md`](docs/api-contract-status.md). Smoke client: `com.talentpool.tools.DemoSmokeClient` (uses seeded `PUESTO_ID`; does not exercise organization CRUD).
 
-### LLM Evaluation Suite (Not Started)
-- [ ] Create test dataset (5+ prompts)
-- [ ] MockChatModel tests
-- [ ] Quality metrics (relevance, consistency)
-- [ ] Cost tracking
-
-### CI/CD Pipeline (Not Started)
-- [ ] GitHub Actions workflow
-- [ ] Backend: lint, test, build
-- [ ] SonarQube integration
-- [ ] Docker build verification
+**SPA**: rutas públicas `/accept-invitation?token=` y autenticadas `/chat` conectadas a los endpoints backend (mock cubre ambas en fallback).
 
 ---
 
-## 📁 File Structure Created
+## Quick commands
 
-```
-backend/
-├── pom.xml                                    ✅
-├── mvnw, mvnw.cmd                            ✅
-├── .mvn/wrapper/maven-wrapper.properties     ✅
-├── src/main/
-│   ├── java/com/talentpool/
-│   │   ├── api/
-│   │   │   ├── AuthResource.java             ✅
-│   │   │   └── dto/
-│   │   │       ├── RegisterRequest.java      ✅
-│   │   │       ├── LoginRequest.java         ✅
-│   │   │       ├── AuthResponse.java         ✅
-│   │   │       └── UsuarioResponse.java      ✅
-│   │   ├── domain/
-│   │   │   └── Usuario.java                  ✅
-│   │   ├── service/
-│   │   │   └── AuthService.java              ✅
-│   │   └── infrastructure/
-│   │       └── security/
-│   │           ├── PasswordHasher.java       ✅
-│   │           └── JwtTokenService.java      ✅
-│   └── resources/
-│       ├── application.yml                    ✅ (updated)
-│       ├── privateKey.pem                     ✅
-│       ├── publicKey.pem                      ✅
-│       └── db/migration/
-│           ├── V001__create_extensions.sql   ✅
-│           └── V002__create_usuarios.sql     ✅
-└── src/test/
-    └── java/com/talentpool/
-        ├── HealthCheckTest.java               ✅
-        └── api/
-            └── AuthResourceTest.java          ✅
-```
-
----
-
-## 🚀 Next Steps
-
-### Immediate (Complete Phase 1)
-1. **Implement Chat Endpoint** with LangChain4j
-2. **Add Rate Limiting** with Redis
-3. **Create LLM Eval Suite**
-4. **Setup CI/CD Pipeline**
-5. **Test End-to-End**
-
-### Testing the Current Implementation
 ```bash
-# Start infrastructure
-cd infra/compose
-docker-compose -f docker-compose.dev.yml up -d
-
-# Run backend in dev mode
-cd backend
-./mvnw quarkus:dev
-
-# Run tests
-./mvnw test
+cd infra/compose && docker-compose -f docker-compose.dev.yml up -d
+cd backend && ./mvnw quarkus:dev
+# frontend: pnpm dev (from frontend/)
 ```
 
-### Expected Endpoints (Currently Working)
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - Login user
-- `GET /api/v1/auth/me` - Get current user (requires JWT)
-- `GET /q/health/live` - Liveness probe
-- `GET /q/health/ready` - Readiness probe
-- `GET /q/metrics` - Prometheus metrics
-- `GET /q/openapi` - OpenAPI specification
-- `GET /q/swagger-ui` - Swagger UI
-
 ---
 
-## 📊 Success Metrics (Phase 1 Target)
+## Definition of Done — Phase 1 (mirror of ROADMAP)
 
-| Metric | Target | Status |
-|--------|--------|--------|
-| Login latency p95 | < 500ms | ⏳ Not measured |
-| Chat latency p95 | < 8s | ⏳ Not implemented |
-| Token cost per chat | < $0.05 | ⏳ Not implemented |
-| E2E stability | 100% (10 runs) | ⏳ Not tested |
-| Test coverage | > 80% | ⏳ Not measured |
+Track completion in [`product/ROADMAP.md`](product/ROADMAP.md) § Phase 1 Definition of Done; rough snapshot:
 
----
-
-## 🔒 Security Notes
-
-1. **JWT Keys**: Generated locally, added to .gitignore
-   - Regenerate per environment in production
-   - Store in secrets management (AWS Secrets Manager, etc.)
-
-2. **Password Hashing**: Argon2id with secure defaults
-   - 3 iterations
-   - 65536 KB memory
-   - 4 parallelism
-
-3. **CORS**: Configured for localhost development
-   - Update for production domains
-
----
-
-## 📝 Technical Debt
-
-None registered yet. All shortcuts will be documented in `TECH_DEBT.md` as per CONTRIBUTING.md guidelines.
-
----
-
-## 🎯 Definition of Done - Phase 1
-
-- [x] Human can register on staging
-- [x] Human can login on staging
-- [ ] Human can chat with LLM on staging
-- [ ] Metrics show latency, tokens, cost
-- [ ] E2E test passes in CI (no flakiness)
-- [ ] LLM eval suite passes (100%)
-- [ ] Demo video recorded (2-3 min)
-
-**Status**: 3/7 complete (43%)
-
----
-
-**Last Updated**: 2026-05-02 00:44 UTC  
-**Next Review**: After completing chat endpoint
+| Item | State |
+|------|--------|
+| Register / login (human) | Done |
+| Chat with LLM | API yes; dedicated Phase-1 chat UI no |
+| Metrics / cost / latency | Partial (Micrometer; no Grafana dashboard in repo) |
+| E2E in CI | Open |
+| LLM eval 100% | Open |
+| Demo video | Open |

@@ -57,8 +57,7 @@ public class Evaluacion extends PanacheEntityBase {
   @Column(nullable = false)
   public Instant inicio;
 
-  @Column
-  public Instant entrega;
+  @Column public Instant entrega;
 
   @Column(name = "evaluado_en")
   public Instant evaluadoEn;
@@ -91,7 +90,8 @@ public class Evaluacion extends PanacheEntityBase {
   }
 
   public static List<Evaluacion> findByAsignacion(UUID asignacionId) {
-    return list("asignacionId = ?1 and estado = 'EVALUADA' order by puntajeTotal desc", asignacionId);
+    return list(
+        "asignacionId = ?1 and estado = 'EVALUADA' order by puntajeTotal desc", asignacionId);
   }
 
   public static long countByAsignacionAndCandidate(UUID asignacionId, UUID candidatoId) {

@@ -22,8 +22,7 @@ public class PasswordHasher {
   private final int parallelism;
 
   public PasswordHasher(
-      @ConfigProperty(name = "app.security.password.iterations", defaultValue = "3")
-          int iterations,
+      @ConfigProperty(name = "app.security.password.iterations", defaultValue = "3") int iterations,
       @ConfigProperty(name = "app.security.password.memory-kb", defaultValue = "65536")
           int memoryKb,
       @ConfigProperty(name = "app.security.password.parallelism", defaultValue = "4")

@@ -29,6 +29,7 @@ export function SolveChallenge() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const assignmentId = searchParams.get('assignmentId')
+  const invitationToken = searchParams.get('token') ?? undefined
 
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [assignment, setAssignment] = useState<ChallengeAssignment | null>(null)
@@ -39,10 +40,32 @@ export function SolveChallenge() {
   const [timeRemaining, setTimeRemaining] = useState<string>('')
 
   useEffect(() => {
-    if (id && assignmentId) {
-      loadData()
+    if (!id || !assignmentId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        setLoading(true)
+        const [challengeData, assignmentData] = await Promise.all([
+          challengeService.getById(id),
+          assignmentService.getById(assignmentId),
+        ])
+        if (cancelled) return
+        setChallenge(challengeData)
+        setAssignment(assignmentData)
+      } catch (error) {
+        if (!cancelled) {
+          toast.error('Failed to load challenge')
+          console.error(error)
+          navigate('/my-challenges')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-  }, [id, assignmentId])
+  }, [id, assignmentId, navigate])
 
   useEffect(() => {
     if (assignment?.fechaLimite) {
@@ -73,24 +96,6 @@ export function SolveChallenge() {
     }
   }, [assignment])
 
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const [challengeData, assignmentData] = await Promise.all([
-        challengeService.getById(id!),
-        assignmentService.getById(assignmentId!)
-      ])
-      setChallenge(challengeData)
-      setAssignment(assignmentData)
-    } catch (error) {
-      toast.error('Failed to load challenge')
-      console.error(error)
-      navigate('/my-challenges')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleSubmit = async () => {
     if (!code.trim()) {
       toast.error('Please write some code before submitting')
@@ -105,7 +110,10 @@ export function SolveChallenge() {
       setSubmitting(true)
       const evaluation = await evaluationService.submit({
         asignacionId: assignmentId!,
-        codigo: code
+        codigo: code,
+        invitationToken,
+        lenguaje: language,
+        minutosEmpleados: challenge?.minutosEstimados ?? 0,
       })
       
       toast.success('Solution submitted successfully! Evaluating...')
@@ -135,7 +143,7 @@ export function SolveChallenge() {
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
               <span>⏱️ Est. time: {challenge.minutosEstimados} min</span>
               {timeRemaining && (
-                <span className={timeRemaining === 'Expired' ? 'text-red-600 font-semibold' : 'text-blue-600'}>
+                <span className={timeRemaining === 'Expired' ? 'text-red-600 font-semibold' : 'text-primary-600'}>
                   ⏰ {timeRemaining}
                 </span>
               )}
@@ -178,7 +186,7 @@ export function SolveChallenge() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-teal-200 ring-2 ring-teal-100">
               <Editor
                 height="500px"
                 language={language}
@@ -205,12 +213,12 @@ export function SolveChallenge() {
 
         {/* Warning */}
         {submitting && (
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-primary-50 border-primary-200">
             <CardContent className="py-4 flex items-center gap-3">
               <Spinner />
               <div>
-                <p className="font-semibold text-blue-900">Submitting your solution...</p>
-                <p className="text-sm text-blue-700">AI is evaluating your code. This may take up to 10 seconds.</p>
+                <p className="font-semibold text-primary-900">Submitting your solution...</p>
+                <p className="text-sm text-primary-700">AI is evaluating your code. This may take up to 10 seconds.</p>
               </div>
             </CardContent>
           </Card>

@@ -1198,7 +1198,7 @@ Scenario: regenerate one module
    - What to improve
    - Suggested resources
    - “Retry module” or “Continue to next”
-9. When all modules complete, `progreso_roadmap.estado` → `COMPLETADO` and appears as validated skill on profile
+9. When all modules complete, `progresos_roadmap.estado` → `COMPLETADO` and appears as validated skill on profile
 10. Prominent “Apply to role” at end of roadmap
 
 **Alternate flows**:
@@ -1218,7 +1218,7 @@ Scenario: complete first module
 
 Scenario: complete full roadmap
   Given I completed all 8 modules
-  Then progreso_roadmap.estado is COMPLETADO
+  Then progresos_roadmap.estado is COMPLETADO
   And perfil_talento shows "Roadmap Acme Corp - Backend Java SSR" as validated skill
   And I am offered apply to role prominently
 
@@ -1236,7 +1236,7 @@ Scenario: apply without completing roadmap
 - No strict rate limit: practice use case—we want usage
 
 **Considerations**:
-- Roadmaps **do not consume recruiter LLM budget**; cost borne by candidate or platform per ADR-0007
+- Roadmaps **do not consume recruiter LLM budget**; which party funds practice-module LLM calls (platform vs candidate vs future org credits) is defined in **ADR-0008**; provider and unit economics in **ADR-0007**
 - Formative feedback is **never** eliminatory for applying: candidate can apply even with poor module scores
 - Same UC-017 `InputGuardrail` applies to all submitted code
 
@@ -1716,6 +1716,7 @@ This is the **highest technical risk**. Without it, the value proposition fails:
    - ADR-0005: determinism and LLM evaluation cache policy
    - ADR-0006: visibility and consent policy (pool and recommendations)
    - ADR-0007: production LLM provider (with cost analysis)
+   - ADR-0008: practice roadmap (UC-024) LLM cost allocation (who pays)
 4. Start phase 0 per `ROADMAP.md` from this baseline
 
 ---
@@ -1726,4 +1727,4 @@ This is the **highest technical risk**. Without it, the value proposition fails:
 |------|---------|---------|
 | 2026-04 | 1.0 | Initial version after critical analysis; two primary customers and 22 corrected UCs |
 | 2026-05-02 | 1.1 | Extended UC-006 with tools + technical + soft skills. UC-007 extended to multi-challenge evaluation plan. Added UC-023 (generate practice roadmap), UC-024 (candidate roadmap journey), UC-025 (roadmap progress view), UC-026 (cross-course integrator). All phase 2. Updated §4 index, §5 scope, §9 dependencies, §10 screens. |
-| 2026-05-02 | 1.2 | Full English translation of the document; content parity with v1.1. |
+| 2026-05-02 | 1.2 | Full English translation; parity with v1.1. Follow-up doc sync: canonical `progresos_roadmap`; UC-024 cost refs ADR-0007 + ADR-0008; §13 lists ADR-0008. |

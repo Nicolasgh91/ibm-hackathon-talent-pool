@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -30,6 +31,7 @@ public class DesafioService {
   @Inject EntityManager em;
   @Inject Instance<MockChallengeGenerator> mockGenerator;
   @Inject PuestoService puestoService;
+
   @ConfigProperty(name = "app.llm.use-mock-llm", defaultValue = "false")
   boolean useMockLlm;
 
@@ -54,8 +56,8 @@ public class DesafioService {
     PromptVersion promptVersion = getActivePromptVersion("generador_desafio");
 
     // Generate challenge using mock generator (simulates 3-8s latency)
-    MockChallengeGenerator.ChallengeContent content = generateChallengeContent(
-        puesto.tecnologiaPrincipal, puesto.seniority);
+    MockChallengeGenerator.ChallengeContent content =
+        generateChallengeContent(puesto.tecnologiaPrincipal, puesto.seniority);
 
     // Create Desafio entity
     Desafio desafio = new Desafio();
@@ -104,6 +106,19 @@ public class DesafioService {
     return desafio;
   }
 
+  public List<Desafio> listByPuesto(UUID puestoId) {
+    return em.createQuery(
+            "SELECT d FROM Desafio d, AsignacionDesafio a "
+                + "WHERE a.desafioId = d.id AND a.puestoId = :puestoId",
+            Desafio.class)
+        .setParameter("puestoId", puestoId)
+        .getResultList();
+  }
+
+  public List<Desafio> listByOrganizacion(UUID organizacionId) {
+    return Desafio.list("organizacionId", organizacionId);
+  }
+
   /**
    * Get active prompt version for a specific type.
    *
@@ -118,8 +133,10 @@ public class DesafioService {
         .setParameter("nombre", nombre)
         .getResultStream()
         .findFirst()
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "No active prompt version found for name: " + nombre));
+        .orElseThrow(
+            () ->
+                new ResourceNotFoundException(
+                    "No active prompt version found for name: " + nombre));
   }
 
   private MockChallengeGenerator.ChallengeContent generateChallengeContent(
