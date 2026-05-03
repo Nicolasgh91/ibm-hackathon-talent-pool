@@ -10,14 +10,17 @@ import com.talentpool.domain.InvitacionDesafio;
 import com.talentpool.infrastructure.security.JwtTokenService;
 import com.talentpool.service.DesafioService;
 import com.talentpool.service.InvitacionService;
+import com.talentpool.service.PuestoService;
 import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -40,6 +43,47 @@ public class ChallengesResource {
   @Inject DesafioService desafioService;
   @Inject InvitacionService invitacionService;
   @Inject JwtTokenService jwtTokenService;
+  @Inject PuestoService puestoService;
+
+  @GET
+  @Authenticated
+  @Operation(summary = "List challenges")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        content = @Content(schema = @Schema(implementation = DesafioResponse.class))),
+    @APIResponse(responseCode = "401", description = "Unauthorized")
+  })
+  public Response list(
+      @QueryParam("puestoId") UUID puestoId, @Context SecurityContext securityContext) {
+    List<Desafio> desafios;
+    if (puestoId != null) {
+      UUID userId = jwtTokenService.parseUserId(securityContext.getUserPrincipal().getName());
+      puestoService.validateUserAccess(userId, puestoId);
+      desafios = desafioService.listByPuesto(puestoId);
+    } else {
+      UUID userId = jwtTokenService.parseUserId(securityContext.getUserPrincipal().getName());
+      UUID orgId = puestoService.primaryOrganizationForUser(userId);
+      desafios = desafioService.listByOrganizacion(orgId);
+    }
+    return Response.ok(desafios.stream().map(DesafioResponse::from).toList()).build();
+  }
+
+  @GET
+  @Path("/{id}")
+  @Authenticated
+  @Operation(summary = "Get challenge by id")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        content = @Content(schema = @Schema(implementation = DesafioResponse.class))),
+    @APIResponse(responseCode = "401", description = "Unauthorized"),
+    @APIResponse(responseCode = "404", description = "Challenge not found")
+  })
+  public Response getById(@PathParam("id") UUID id) {
+    Desafio d = desafioService.findById(id);
+    return Response.ok(DesafioResponse.from(d)).build();
+  }
 
   @POST
   @Authenticated
@@ -78,20 +122,24 @@ public class ChallengesResource {
       @Valid InviteCandidatesRequest request,
       @Context SecurityContext securityContext) {
     UUID userId = jwtTokenService.parseUserId(securityContext.getUserPrincipal().getName());
-    List<InvitacionDesafio> invitaciones = invitacionService.inviteCandidates(desafioId, request, userId);
-    List<InvitacionDetail> detalles = invitaciones.stream()
-        .map(inv -> new InvitacionDetail(
-            inv.id,
-            inv.emailInvitado,
-            inv.token,
-            inv.estado,
-            inv.expiraEn,
-            invitacionService.buildInvitationUrl(inv.token)))
-        .toList();
+    List<InvitacionDesafio> invitaciones =
+        invitacionService.inviteCandidates(desafioId, request, userId);
+    List<InvitacionDetail> detalles =
+        invitaciones.stream()
+            .map(
+                inv ->
+                    new InvitacionDetail(
+                        inv.id,
+                        inv.emailInvitado,
+                        inv.token,
+                        inv.estado,
+                        inv.expiraEn,
+                        invitacionService.buildInvitationUrl(inv.token)))
+            .toList();
     UUID asignacionId = invitaciones.isEmpty() ? null : invitaciones.get(0).asignacionId;
     InvitacionesResponse response =
-        new InvitacionesResponse(asignacionId, detalles, detalles.size(), request.emails().size() - detalles.size());
+        new InvitacionesResponse(
+            asignacionId, detalles, detalles.size(), request.emails().size() - detalles.size());
     return Response.status(Response.Status.CREATED).entity(response).build();
   }
 }
-

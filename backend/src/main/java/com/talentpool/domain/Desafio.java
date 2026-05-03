@@ -1,8 +1,10 @@
 package com.talentpool.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -40,8 +42,8 @@ public class Desafio extends PanacheEntityBase {
   @Column(name = "rubrica_oculta", nullable = false, columnDefinition = "jsonb")
   public JsonObject rubricaOculta;
 
-  @Column(name = "contexto_origen", nullable = false, length = 20)
-  public String contextoOrigen; // CORPORATIVO, ACADEMICO, BIBLIOTECA
+  @Column(name = "contexto_origen", nullable = false, length = 30)
+  public String contextoOrigen; // CORPORATIVO, ACADEMICO, BIBLIOTECA, ACADEMICO_INTEGRADOR
 
   @Column(nullable = false, length = 100)
   public String tecnologia;
@@ -54,6 +56,20 @@ public class Desafio extends PanacheEntityBase {
 
   @Column(name = "es_publico", nullable = false)
   public Boolean esPublico = false;
+
+  @Column(name = "plan_evaluacion_id", columnDefinition = "UUID")
+  public UUID planEvaluacionId;
+
+  @Column(name = "tipo_desafio", length = 30)
+  public String
+      tipoDesafio; // TECNICO_PURO, TECNICO_CON_STACK, COMUNICACION, DOCUMENTACION, INTEGRACION
+
+  @Column(precision = 5, scale = 2)
+  public BigDecimal peso;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "cursos_integrados", columnDefinition = "jsonb")
+  public JsonArray cursosIntegrados;
 
   @Column(nullable = false, length = 20)
   public String estado = "BORRADOR"; // BORRADOR, REVISION, ACTIVO, ARCHIVADO
@@ -82,5 +98,3 @@ public class Desafio extends PanacheEntityBase {
     return findById(id);
   }
 }
-
-// Made with Bob

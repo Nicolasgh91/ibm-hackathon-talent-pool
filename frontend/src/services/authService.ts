@@ -11,6 +11,29 @@ import {
 
 const REFRESH_STORAGE_KEY = 'auth_refresh_token'
 
+/** Persist chosen persona per email — JWT has no role claim yet (backend). */
+function roleStorageKey(email: string): string {
+  return `tp_role_${encodeURIComponent(email)}`
+}
+
+function persistRoleForEmail(email: string, rol: (typeof UserRole)[keyof typeof UserRole]): void {
+  try {
+    localStorage.setItem(roleStorageKey(email), rol)
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function readPersistedRole(email: string): (typeof UserRole)[keyof typeof UserRole] | null {
+  try {
+    const r = localStorage.getItem(roleStorageKey(email)) as (typeof UserRole)[keyof typeof UserRole] | null
+    if (r && Object.values(UserRole).includes(r)) return r
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
 function splitNombreCompleto(nombreCompleto: string): { nombre: string; apellido: string } {
   const trimmed = (nombreCompleto || '').trim()
   const parts = trimmed.split(/\s+/)
@@ -57,13 +80,18 @@ function mapUsuarioMeToUser(
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthSession> {
     const stored = this.getUser()
-    const rolFallback = stored?.rol ?? UserRole.CANDIDATO
     const response = await api.post<AuthResponseDto>('/auth/login', credentials)
     const data = response.data
+    const email = data.usuario.email
+    const persisted = readPersistedRole(email)
+    const rolFallback =
+      persisted ?? stored?.rol ?? UserRole.CANDIDATO
+    const user = mapAuthUsuarioToUser(data.usuario, rolFallback)
+    persistRoleForEmail(email, user.rol)
     return {
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
-      user: mapAuthUsuarioToUser(data.usuario, rolFallback),
+      user,
     }
   },
 
@@ -75,6 +103,7 @@ export const authService = {
     }
     const response = await api.post<AuthResponseDto>('/auth/register', body)
     const d = response.data
+    persistRoleForEmail(data.email, data.rol)
     return {
       accessToken: d.accessToken,
       refreshToken: d.refreshToken,
@@ -113,6 +142,16 @@ export const authService = {
 
   saveUser(user: User): void {
     localStorage.setItem('user', JSON.stringify(user))
+    persistRoleForEmail(user.email, user.rol)
+  },
+
+  /**
+   * Persist the chosen persona for a given email before login. Used by the
+   * dev credentials helper so that on a fresh browser the post-login redirect
+   * lands on the right home (e.g. ESTUDIANTE -> /student/dashboard).
+   */
+  saveRoleForEmail(email: string, rol: (typeof UserRole)[keyof typeof UserRole]): void {
+    persistRoleForEmail(email, rol)
   },
 
   getUser(): User | null {

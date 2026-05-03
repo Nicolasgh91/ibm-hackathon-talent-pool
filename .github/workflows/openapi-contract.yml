@@ -1,0 +1,21 @@
+name: OpenAPI contract check
+
+on:
+  push:
+    paths:
+      - 'api/openapi.yaml'
+      - '.github/workflows/openapi-contract.yml'
+  pull_request:
+    paths:
+      - 'api/openapi.yaml'
+
+jobs:
+  spectral:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Lint OpenAPI (Spectral)
+        run: npx --yes @stoplight/spectral-cli lint api/openapi.yaml

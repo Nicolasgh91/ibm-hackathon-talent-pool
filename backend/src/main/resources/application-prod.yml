@@ -9,6 +9,8 @@ quarkus:
   langchain4j:
     chat-model:
       provider: openai
+    openai:
+      api-key: ${OPENAI_API_KEY}
   # Dev Services DISABLED in production
   devservices:
     enabled: false
@@ -63,10 +65,14 @@ quarkus:
   log:
     level: INFO
     category:
-      "com.talentpool": INFO
-      "io.quarkus": WARN
-      "org.hibernate": WARN
-      "org.flywaydb": INFO
+      com.talentpool:
+        level: INFO
+      io.quarkus:
+        level: WARN
+      org.hibernate:
+        level: WARN
+      org.flywaydb:
+        level: INFO
     console:
       enable: true
       format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"

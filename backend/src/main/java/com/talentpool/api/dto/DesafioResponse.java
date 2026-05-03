@@ -1,6 +1,7 @@
 package com.talentpool.api.dto;
 
 import com.talentpool.domain.Desafio;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -20,9 +21,12 @@ public record DesafioResponse(
     Integer minutosEstimados,
     String contextoOrigen,
     Boolean esPublico,
+    UUID planEvaluacionId,
+    String tipoDesafio,
+    BigDecimal peso,
     String estado,
-    Instant createdAt
-) {
+    Instant createdAt) {
+
   public static DesafioResponse from(Desafio desafio) {
     return new DesafioResponse(
         desafio.id,
@@ -35,10 +39,10 @@ public record DesafioResponse(
         desafio.minutosEstimados,
         desafio.contextoOrigen,
         desafio.esPublico,
+        desafio.planEvaluacionId,
+        desafio.tipoDesafio,
+        desafio.peso,
         desafio.estado,
-        desafio.createdAt
-    );
+        desafio.createdAt);
   }
 }
-
-// Made with Bob

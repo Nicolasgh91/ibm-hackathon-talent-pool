@@ -2,9 +2,9 @@ package com.talentpool.infrastructure.security;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.annotation.PostConstruct;
 import jakarta.ws.rs.BadRequestException;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -57,8 +57,8 @@ public class InputGuardrailService {
   /**
    * Validate user input against guardrails.
    *
-   * <p>Checks: 1. Length validation (max 2000 chars) 2. Prompt injection patterns 3. SQL
-   * injection patterns 4. XSS patterns
+   * <p>Checks: 1. Length validation (max 2000 chars) 2. Prompt injection patterns 3. SQL injection
+   * patterns 4. XSS patterns
    *
    * @param input the user input to validate
    * @throws BadRequestException if input violates guardrails
@@ -89,7 +89,9 @@ public class InputGuardrailService {
       if (pattern.matcher(input).find()) {
         String patternStr = pattern.pattern();
         recordViolation("pattern_match");
-        Log.warnf("Guardrail violation detected - pattern: %s, input length: %d", patternStr, input.length());
+        Log.warnf(
+            "Guardrail violation detected - pattern: %s, input length: %d",
+            patternStr, input.length());
         throw new BadRequestException(
             "Input contains potentially malicious content. Please rephrase your message.");
       }
@@ -109,7 +111,8 @@ public class InputGuardrailService {
     String lowerInput = input.toLowerCase();
 
     // Check for SQL keywords in suspicious contexts
-    if (lowerInput.matches(".*\\b(union|select|insert|update|delete|drop|create|alter)\\s+(all|from|into|table|database)\\b.*")) {
+    if (lowerInput.matches(
+        ".*\\b(union|select|insert|update|delete|drop|create|alter)\\s+(all|from|into|table|database)\\b.*")) {
       recordViolation("sql_injection");
       Log.warnf("SQL injection attempt detected - input length: %d", input.length());
       throw new BadRequestException("Input contains potentially malicious SQL patterns");

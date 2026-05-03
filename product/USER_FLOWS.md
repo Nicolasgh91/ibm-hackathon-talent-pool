@@ -348,9 +348,11 @@ Beyond inviting candidates to one-off challenges, the recruiter can search the g
 | UC-009 | Invite candidates | Per search |
 | UC-010 | View ranking | Daily during active search |
 | UC-011 | View evaluation detail | For finalists |
-| **UC-NUEVO** | **View candidates’ practice roadmap progress** | To gauge interest |
+| **UC-025** | **View candidate practice roadmap progress** | To gauge interest |
+| **UC-023** | **Generate practice roadmap from a role** (system / recruiter) | When role opens or on demand |
+| **UC-024** | **Complete practice roadmap as candidate** | Optional before apply |
 
-> **Note**: UC-006 and UC-007 are extended vs. the original `PRODUCT.md`. The roadmap UC is new. Details in section 7.7.
+> **Note**: UC-006 and UC-007 are extended in `PRODUCT.md` v1.1; practice roadmap UCs (UC-023–025) are specified there. Summary in section 7.7.
 
 ---
 
@@ -402,7 +404,7 @@ If they choose to practice, they see a roadmap like this:
 
 ```
 Practice roadmap · Backend Java SSR · Acme Corp
-8 modules · 6–10 hours estimated · Your progress: 0/8
+Example: 8 modules (spec: 6–10 per role, UC-023) · ~6–10 h estimated · Your progress: 0/8
 
 ▶ Module 1 (45 min): Environment setup
    - Clone the practice repo (structure identical to Acme’s)
@@ -502,15 +504,15 @@ This makes Talent Pool more than an assessment platform: it is a **contextual pr
 
 ### 7.7 Use cases involved
 
-| ID | Use case | Status in `PRODUCT.md` |
-|----|----------|------------------------|
-| UC-006 (extended) | Create job role with stack, technical and soft skills | **GAP**: current `PRODUCT.md` defines the role only with title, technology, and seniority. Missing fields for tools, technical skills, and soft skills. |
-| UC-007 (extended) | Generate challenge plan (not a single challenge) covering technical + soft | **GAP**: current `PRODUCT.md` generates one challenge per role. Missing multi-challenge “evaluation plan” concept. |
-| UC-NUEVO-A | Generate practice roadmap from a role | **NEW**: not in `PRODUCT.md`. Propose as UC-023. |
-| UC-NUEVO-B | Complete practice roadmap as candidate | **NEW**: not in `PRODUCT.md`. Propose as UC-024. |
-| UC-NUEVO-C | View candidate roadmap progress (recruiter view) | **NEW**: not in `PRODUCT.md`. Propose as UC-025. |
+| ID | Use case | Status in `PRODUCT.md` v1.1 |
+|----|----------|-------------------------------|
+| UC-006 (extended) | Create job role with stack, tools, technical and soft skills | **Defined** — § UC-006 |
+| UC-007 (extended) | Generate evaluation plan (3–5 coordinated challenges) | **Defined** — § UC-007 |
+| UC-023 | Generate practice roadmap from a role | **Defined** — § UC-023 |
+| UC-024 | Complete practice roadmap as candidate | **Defined** — § UC-024 (LLM cost allocation: **ADR-0008**) |
+| UC-025 | View candidate roadmap progress (recruiter) | **Defined** — § UC-025 |
 
-> **Team note**: content in this section requires updating `PRODUCT.md` with three new UCs and extensions to UC-006 and UC-007. That update is out of hackathon demo scope (not implemented), but it is a **post-MVP roadmap proposal** that strongly differentiates the product.
+> **Scope note**: these flows are **specified for stakeholders and judges** in `PRODUCT.md` v1.1 and in [`DATABASE.md`](DATABASE.md) v1.1. End-to-end implementation may follow later phases; the narrative here describes the intended product experience.
 
 ---
 
@@ -702,7 +704,8 @@ Before the team approves this document and records the video:
 
 ## 12. Internal references
 
-- `PRODUCT.md` — full product definition and 26 use cases (UC-001–UC-026)
-- `DATABASE.md` — data model
+- `PRODUCT.md` — full product definition and 26 use cases (UC-001–UC-026); v1.1 includes roadmap and extended role/challenge plan
+- `DATABASE.md` — data model (v1.1: roadmap tables, extended `puestos` / `desafios`)
+- `docs/adr/0008-asignacion-costos-llm-roadmap-practica.md` — who funds UC-024 LLM calls (practice roadmap)
 - `ARCHITECTURE.md` — technical decisions
 - Prototype: `temp/Talent_Pool.html`

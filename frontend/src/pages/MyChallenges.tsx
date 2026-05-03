@@ -33,7 +33,7 @@ export function MyChallenges() {
   const getStatusBadge = (status: string) => {
     const colors = {
       PENDIENTE: 'bg-yellow-100 text-yellow-800',
-      ACEPTADO: 'bg-blue-100 text-blue-800',
+      ACEPTADO: 'bg-primary-100 text-primary-800',
       RECHAZADO: 'bg-red-100 text-red-800',
       COMPLETADO: 'bg-green-100 text-green-800',
       EXPIRADO: 'bg-gray-100 text-gray-800',
@@ -77,7 +77,7 @@ export function MyChallenges() {
             onClick={() => setFilter('active')}
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
               filter === 'active'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -87,7 +87,7 @@ export function MyChallenges() {
             onClick={() => setFilter('completed')}
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
               filter === 'completed'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -97,7 +97,7 @@ export function MyChallenges() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
               filter === 'all'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -192,7 +192,7 @@ export function MyChallenges() {
           <Card>
             <CardContent className="py-4">
               <div className="text-sm text-gray-600 mb-1">Active</div>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-primary-600">
                 {challenges.filter(c => c.estado === 'ACEPTADO').length}
               </div>
             </CardContent>

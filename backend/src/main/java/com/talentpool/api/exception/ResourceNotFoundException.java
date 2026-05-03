@@ -3,16 +3,11 @@ package com.talentpool.api.exception;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-/**
- * Exception thrown when a requested resource is not found.
- */
+/** Exception thrown when a requested resource is not found. */
 public class ResourceNotFoundException extends WebApplicationException {
 
   public ResourceNotFoundException(String resourceType, Object id) {
-    super(
-        String.format("%s not found: %s", resourceType, id),
-        Response.Status.NOT_FOUND
-    );
+    super(String.format("%s not found: %s", resourceType, id), Response.Status.NOT_FOUND);
   }
 
   public ResourceNotFoundException(String message) {

@@ -2,7 +2,7 @@
 
 > **Comprehensive development roadmap based on PRODUCT.md and ARCHITECTURE.md**
 > 
-> Last updated: 2026-05-01
+> Last updated: 2026-05-03
 
 ---
 
@@ -15,15 +15,17 @@ Talent Pool is an AI-powered platform bridging technical education and employmen
 
 | Phase | Duration | Status | Priority | Deliverable |
 |-------|----------|--------|----------|-------------|
-| **0 - Foundations** | 3-5 days | Pending | CRITICAL | Infrastructure ready |
-| **1 - Walking Skeleton** | 5-7 days | Pending | CRITICAL | End-to-end validation |
-| **2 - MVP Hackathon** | 48-72h | Pending | **CRITICAL** | **Demo ready** |
+| **0 - Foundations** | 3-5 days | Mostly complete* | CRITICAL | Infrastructure ready |
+| **1 - Walking Skeleton** | 5-7 days | Partial* | CRITICAL | End-to-end validation |
+| **2 - MVP Hackathon** | 48-72h | Partial* | **CRITICAL** | **Demo ready** |
 | **3 - Hardening** | 2-3 weeks | Pending | HIGH | Production ready |
 | **4 - Beta Launch** | 3-4 weeks | Pending | HIGH | 30 users live |
 | **5 - Academic Module** | 4-6 weeks | Planned | MEDIUM | Education features |
 | **6 - Corporate Expansion** | 8-12 weeks | Planned | MEDIUM | Enterprise ready |
 | **7 - Monetization** | 12-16 weeks | Planned | LOW | Revenue generation |
 | **8 - Continuous** | Ongoing | Planned | MEDIUM | Iterative enhancement |
+
+\* **Phase 0**: Local stack, backend/frontend apps, ADRs and docs are in place; **CI, production Dockerfiles, full compose stack (backend+frontend services), Sonar, openapi-typescript client** remain open — see Phase 0 checklist. **Phase 1**: **Auth + chat API + guardrails + Redis rate limit** implemented; **dedicated `/home` chat UI** from the original spec was not built (product evolved to hackathon dashboard flow); **Grafana, CI E2E, executable LLM eval suite at 100%, JWT refresh endpoint** remain gaps — see Phase 1 checklist. **Phase 2**: End-to-end **recruiter/candidate hackathon UI + REST** (incl. **UC-004** `GET/POST/PUT/DELETE /api/v1/organizations`, Flyway **V015** `descripcion`) is in the repo; **CI, Playwright E2E, coverage ≥75/60%, LLM eval gate, staging, demo video** are still open vs the aspirational DoD below.
 
 ### Critical Path to Hackathon Demo
 
@@ -46,6 +48,12 @@ Phase 0 (5d) → Phase 1 (7d) → Phase 2 (3d) = 15 days total
 7. **Measured Quality, Not Assumed** - Linters, tests, evals block in CI
 8. **Controlled Costs** - Every LLM UC declares token budget
 
+### Checklist legend (Phases 0–1 audit)
+
+- `[x]` Implemented as specified  
+- `[~]` Partial / alternate implementation (see note on the line)  
+- `[ ]` Not done or not in repo  
+
 ---
 
 ## Phase 0: Foundations (Days 1-5)
@@ -53,30 +61,35 @@ Phase 0 (5d) → Phase 1 (7d) → Phase 2 (3d) = 15 days total
 ### Objective
 Establish infrastructure so feature development is mechanical and safe.
 
+### Implementation notes (audit 2026-05-02)
+
+- **Layers**: Code uses `com.talentpool.service` for application/orchestration logic (no folder named `application`). Other layers match (`api`, `domain`, `infrastructure`).
+- **Auth “me” endpoint**: Implemented as `GET /api/v1/auth/me`, not `GET /api/v1/users/me` (same responsibility).
+
 ### Key Deliverables
 
 **Backend (Quarkus)**
-- [ ] Project structure with mandatory folders (api, domain, application, infrastructure)
-- [ ] pom.xml with fixed versions (Quarkus 3.17.x, LangChain4j 1.x, PostgreSQL, Flyway)
-- [ ] Maven wrapper committed
-- [ ] Spotless + Checkstyle configured (Google Java Style)
-- [ ] Flyway with V001__initial_schema.sql placeholder
-- [ ] application.yml with profiles (dev/test/prod)
-- [ ] Quarkus Dev Services for PostgreSQL + pgvector
-- [ ] Health endpoints responding (/q/health/live, /q/health/ready, /q/metrics)
-- [ ] OpenAPI generating (/q/openapi)
-- [ ] Minimal @QuarkusTest passing
+- [~] Project structure with mandatory folders (api, domain, application, infrastructure) — use `service` instead of `application`
+- [x] pom.xml with fixed versions (Quarkus 3.17.x, LangChain4j 1.x, PostgreSQL, Flyway)
+- [x] Maven wrapper committed
+- [~] Spotless + Checkstyle configured (Google Java Style) — Spotless + Google Java Format; **no separate Checkstyle plugin**
+- [x] Flyway with V001__initial_schema.sql placeholder — **superseded**: migrations V001–V013 (extensions, usuarios, hackathon schema)
+- [x] application.yml with profiles (dev/test/prod)
+- [~] Quarkus Dev Services for PostgreSQL + pgvector — Dev Services + manual compose fallback (`infra/compose/docker-compose.dev.yml`)
+- [x] Health endpoints responding (/q/health/live, /q/health/ready, /q/metrics)
+- [x] OpenAPI generating (/q/openapi)
+- [x] Minimal @QuarkusTest passing
 - [ ] LangChain4j configured with MockChatModel test
 
 **Frontend (React + TypeScript)**
-- [ ] Vite + React + TypeScript initialized
-- [ ] ESLint + Prettier + Husky configured
+- [x] Vite + React + TypeScript initialized
+- [x] ESLint + Prettier + Husky configured
 - [ ] openapi-typescript client generation
 - [ ] Health check page calling backend
-- [ ] Vitest + Playwright configured
+- [~] Vitest + Playwright configured — scripts and deps present; **no committed `*.test.*` / `e2e/` specs yet**
 
 **Infrastructure**
-- [ ] docker-compose.yml (postgres, redis, ollama, backend, frontend)
+- [~] docker-compose.yml (postgres, redis, ollama, backend, frontend) — **only** postgres + redis + ollama (+ optional pgAdmin); **no backend/frontend containers**
 - [ ] Dockerfile.backend.jvm (multi-stage build)
 - [ ] Dockerfile.frontend (nginx for SPA)
 - [ ] GitHub Actions CI pipeline (lint, test, build)
@@ -84,17 +97,17 @@ Establish infrastructure so feature development is mechanical and safe.
 - [ ] SonarQube/SonarCloud integrated (warning mode)
 
 **Documentation**
-- [ ] CHANGELOG.md created
-- [ ] TECH_DEBT.md created
-- [ ] ADR-0001: Stack base closed
-- [ ] ADR-0002: RAG strategy closed
-- [ ] ADR-0003: LLM evals closed
+- [x] CHANGELOG.md created
+- [x] TECH_DEBT.md created
+- [x] ADR-0001: Stack base closed
+- [x] ADR-0002: RAG strategy closed
+- [x] ADR-0003: LLM evals closed
 
 ### Definition of Done
-- ✅ `./mvnw quarkus:dev` and `pnpm dev` work on fresh clone
-- ✅ CI pipeline passes in green
-- ✅ Staging "hello world" accessible via HTTPS
-- ✅ README.md setup validated
+- [x] `./mvnw quarkus:dev` and `pnpm dev` work on fresh clone
+- [ ] CI pipeline passes in green
+- [ ] Staging "hello world" accessible via HTTPS
+- [x] README.md setup validated
 
 ### Success Metrics
 - Setup time: < 15 minutes
@@ -111,30 +124,32 @@ Validate complete architecture end-to-end with trivial LLM capability.
 ### Scope
 User can: Register → Login → Send message to LLM → See response
 
+**Current product note**: Register/login and a **chat API** exist; the UI focuses on the **hackathon dashboard** (organizations, challenges, etc.) rather than a dedicated Phase-1 chat page. For audit detail see Implementation notes under Phase 0.
+
 ### Key Deliverables
 
 **Backend**
-- [ ] Migration V002__users_table.sql (usuarios with email, password_hash)
-- [ ] POST /api/v1/auth/register (Argon2id hashing, JWT tokens)
-- [ ] POST /api/v1/auth/login (JWT with SmallRye JWT)
-- [ ] GET /api/v1/users/me (authenticated endpoint)
-- [ ] POST /api/v1/chat (LangChain4j integration, rate limiting)
-- [ ] Input guardrails (max 2000 chars, prompt injection detection)
-- [ ] Redis-based rate limiter (10 req/min per user)
-- [ ] Tests: unit (>80%), integration (@QuarkusTest >70%), E2E
-- [ ] LLM Evals (5 prompts, 100% pass rate)
-- [ ] Structured logs (JSON with correlation ID)
-- [ ] Metrics (Micrometer): auth, chat, tokens, cost
-- [ ] Traces (OpenTelemetry): LLM call spans
+- [x] Migration V002__users_table.sql (usuarios with email, password_hash) — file: `V002__create_usuarios.sql`
+- [x] POST /api/v1/auth/register (Argon2id hashing, JWT tokens)
+- [x] POST /api/v1/auth/login (JWT with SmallRye JWT)
+- [~] GET /api/v1/users/me (authenticated endpoint) — implemented as **`GET /api/v1/auth/me`**
+- [x] POST /api/v1/chat (LangChain4j integration, rate limiting)
+- [x] Input guardrails (max 2000 chars, prompt injection detection)
+- [x] Redis-based rate limiter (10 req/min per user)
+- [~] Tests: unit (>80%), integration (@QuarkusTest >70%), E2E — `@QuarkusTest` present; JaCoCo bundle gate 70%; **roadmap E2E/coverage targets not fully met**
+- [~] LLM Evals (5 prompts, 100% pass rate) — dataset YAML + Maven `evals` profile; **no `@Tag("evals")` Java suite at 100%**
+- [~] Structured logs (JSON with correlation ID) — MDC/correlation in chat; JSON logs in prod profile
+- [~] Metrics (Micrometer): auth, chat, tokens, cost — chat-focused; auth metrics not exhaustively audited
+- [~] Traces (OpenTelemetry): LLM call spans — OTel config present (off by default dev; sampled in prod); **explicit LLM spans not verified**
 
 **Frontend**
-- [ ] /register page (form with validation)
-- [ ] /login page (JWT token handling)
-- [ ] /home page (chat interface with Monaco-like input)
-- [ ] AuthContext (login, logout, token refresh)
+- [x] /register page (form with validation)
+- [x] /login page (JWT token handling)
+- [ ] /home page (chat interface with Monaco-like input) — **not implemented**; `/dashboard` and hackathon flows used instead
+- [~] AuthContext (login, logout, token refresh) — login/logout + refresh token **stored**; **no `POST /auth/refresh`**, 401 clears session
 - [ ] ChatContext (messages, sendMessage)
-- [ ] Axios instance with interceptors
-- [ ] Error boundaries + toast notifications
+- [x] Axios instance with interceptors
+- [~] Error boundaries + toast notifications — **toasts** (Sonner); **no React Error Boundary** wired globally
 - [ ] Loading skeletons
 
 **Observability**
@@ -142,11 +157,11 @@ User can: Register → Login → Send message to LLM → See response
 - [ ] Alerts: latency >10s, error rate >5%, cost >$50/day
 
 ### Definition of Done
-- ✅ Human can register, login, chat on staging
-- ✅ Metrics show latency, tokens, cost
-- ✅ E2E test passes in CI (no flakiness)
-- ✅ LLM eval suite passes (100%)
-- ✅ Demo video recorded (2-3 min)
+- [~] Human can register, login, chat on staging — register/login + **chat via API**; **no dedicated Phase-1 chat UI** on staging
+- [~] Metrics show latency, tokens, cost — backend metrics for chat path; **not full Grafana**
+- [ ] E2E test passes in CI (no flakiness)
+- [ ] LLM eval suite passes (100%)
+- [ ] Demo video recorded (2-3 min)
 
 ### Success Metrics
 - Login latency p95: < 500ms
@@ -172,22 +187,22 @@ Implement 11 critical use cases for complete hackathon demo.
 - UC-003: Complete profile (enhanced with role selection)
 
 **Organization & Job Management**
-- UC-004: Create organization (4-6h)
-- UC-006: Create job position (6-8h)
+- UC-004: Create organization (4-6h) — **UI + REST** (`/api/v1/organizations`); column `descripcion` (V015) ✅
+- UC-006: Create job position (6-8h) ✅
 
 **AI Challenge Generation**
-- UC-007: Generate challenge from position (12-16h) - **CORE FEATURE**
-- UC-008: Confirm or regenerate challenge (4-6h)
+- UC-007: Generate challenge from position (12-16h) - **CORE FEATURE** ✅
+- UC-008: Confirm or regenerate challenge (4-6h) ✅
 
 **Challenge Assignment & Solving**
-- UC-009: Invite candidate to challenge (6-8h)
-- UC-016: Accept invitation and access challenge (4-6h)
-- UC-017: Solve challenge with AI evaluation (16-20h) - **CORE FEATURE**
-- UC-018: View feedback (4-6h)
+- UC-009: Invite candidate to challenge (6-8h) ✅
+- UC-016: Accept invitation and access challenge (4-6h) ✅
+- UC-017: Solve challenge with AI evaluation (16-20h) - **CORE FEATURE** ✅
+- UC-018: View feedback (4-6h) ✅
 
 **Recruiter Analytics**
-- UC-010: View candidate rankings (8-12h)
-- UC-011: View detailed evaluation (4-6h)
+- UC-010: View candidate rankings (8-12h) ✅
+- UC-011: View detailed evaluation (4-6h) ✅
 
 ### Database Schema (8 Tables)
 
@@ -244,21 +259,21 @@ String evaluarCodigo(@V("enunciado") String e, @V("rubrica") String r, @V("codig
 
 ### Frontend Components
 
-**Recruiter Dashboard**
-- [ ] Organization creation form
-- [ ] Job position form (tech dropdown, seniority selector)
-- [ ] Generate challenge button (with loading state)
-- [ ] Challenge review page (confirm/regenerate)
-- [ ] Invite candidate form
-- [ ] Rankings table (sortable, filterable)
-- [ ] Evaluation detail view (code + rubric analysis)
+**Recruiter Dashboard** (routes in [`frontend/src/App.tsx`](../frontend/src/App.tsx); audit 2026-05-03)
+- [x] Organization creation form (`/organizations`, `/organizations/new`, `/organizations/:id/edit`)
+- [x] Job position form (tech dropdown, seniority selector)
+- [x] Generate challenge button (with loading state)
+- [x] Challenge review page (confirm/regenerate)
+- [x] Invite candidate form
+- [x] Rankings table (sortable, filterable)
+- [x] Evaluation detail view (code + rubric analysis)
 
 **Candidate Dashboard**
-- [ ] Challenge invitation list
-- [ ] Challenge detail view (without rubric)
-- [ ] Monaco Editor integration (syntax highlighting)
-- [ ] Submit solution button
-- [ ] Feedback view (score, strengths, improvements)
+- [x] Challenge invitation list
+- [x] Challenge detail view (without rubric)
+- [x] Monaco Editor integration (syntax highlighting)
+- [x] Submit solution button
+- [x] Feedback view (score, strengths, improvements)
 
 ### Testing Strategy
 
@@ -274,12 +289,12 @@ String evaluarCodigo(@V("enunciado") String e, @V("rubrica") String r, @V("codig
 - E2E: Playwright (recruiter flow, candidate flow)
 
 ### Definition of Done
-- ✅ UC-001 to UC-011, UC-016 to UC-018 complete with acceptance criteria
-- ✅ Coverage: backend ≥75%, frontend ≥60%
-- ✅ LLM evals: quality ≥85%, precision ≥80%, consistency ≥90%
-- ✅ Metrics: ≥50 challenges, ≥100 evaluations, completeness ≥60%
-- ✅ Staging stable
-- ✅ **Demo video 5 minutes for hackathon**
+- [~] UC-001 to UC-011, UC-016 to UC-018 — **implemented in codebase** (flows + API); formal product acceptance / load testing not fully closed
+- [ ] Coverage: backend ≥75%, frontend ≥60%
+- [ ] LLM evals: quality ≥85%, precision ≥80%, consistency ≥90% (CI gate)
+- [ ] Metrics: ≥50 challenges, ≥100 evaluations, completeness ≥60% (demo data may satisfy ad hoc)
+- [ ] Staging stable (HTTPS)
+- [ ] **Demo video 5 minutes for hackathon**
 
 ### Success Metrics
 - Challenge generation time: < 30s

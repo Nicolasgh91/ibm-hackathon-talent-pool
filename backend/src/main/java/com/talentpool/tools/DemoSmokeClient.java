@@ -112,9 +112,7 @@ public final class DemoSmokeClient {
             client,
             baseUrl + "/api/v1/challenges/" + desafioId + "/invitations",
             tokenRecruiter,
-            "{\"emails\":[\""
-                + jsonEscape(candidateEmail)
-                + "\"],\"maxIntentos\":1}",
+            "{\"emails\":[\"" + jsonEscape(candidateEmail) + "\"],\"maxIntentos\":1}",
             Duration.ofSeconds(60));
     expectStatus(inv.status(), 201, inv.body());
     JsonNode invitaciones = inv.json().path("invitaciones");
@@ -243,8 +241,8 @@ public final class DemoSmokeClient {
     return HttpJson.of(resp.statusCode(), resp.body());
   }
 
-  private static HttpJson getJson(
-      HttpClient client, String url, String bearer, Duration timeout) throws Exception {
+  private static HttpJson getJson(HttpClient client, String url, String bearer, Duration timeout)
+      throws Exception {
     HttpRequest.Builder b = HttpRequest.newBuilder().uri(URI.create(url)).timeout(timeout).GET();
     if (bearer != null) {
       b.header("Authorization", "Bearer " + bearer);

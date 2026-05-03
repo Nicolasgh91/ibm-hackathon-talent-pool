@@ -22,8 +22,7 @@ public class AuthResourceTest {
 
   @Test
   public void testRegisterSuccess() {
-    RegisterRequest request =
-        new RegisterRequest("test@example.com", "Test User", "password123");
+    RegisterRequest request = new RegisterRequest("test@example.com", "Test User", "password123");
 
     given()
         .contentType(ContentType.JSON)

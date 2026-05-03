@@ -42,13 +42,13 @@ quarkus:
   log:
     level: WARN
     category:
-      "com.talentpool":
+      com.talentpool:
         level: INFO
-      "io.quarkus":
+      io.quarkus:
         level: WARN
-      "org.hibernate":
+      org.hibernate:
         level: WARN
-      "org.flywaydb":
+      org.flywaydb:
         level: INFO
     console:
       enable: true
@@ -57,11 +57,13 @@ quarkus:
   transaction-manager:
     default-transaction-timeout: 30s
 
+  langchain4j:
+    openai:
+      api-key: test-key-not-used
+
 # JWT: smallrye.jwt.* y mp.jwt.* en application.yml (raíz), se fusionan con este perfil.
 
 langchain4j:
-  openai:
-    api-key: test-key-not-used
   ollama:
     base-url: http://localhost:11434
 

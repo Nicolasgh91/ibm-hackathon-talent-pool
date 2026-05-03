@@ -142,26 +142,26 @@ export function GenerateChallenge() {
             />
 
             {selectedPosition && (
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="font-semibold text-blue-900 mb-2">Position Details</h3>
+              <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+                <h3 className="font-semibold text-primary-900 mb-2">Position Details</h3>
                 <dl className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-blue-700">Title:</dt>
-                    <dd className="font-medium text-blue-900">{selectedPosition.titulo}</dd>
+                    <dt className="text-primary-700">Title:</dt>
+                    <dd className="font-medium text-primary-900">{selectedPosition.titulo}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-blue-700">Technology:</dt>
-                    <dd className="font-medium text-blue-900">{selectedPosition.tecnologia}</dd>
+                    <dt className="text-primary-700">Technology:</dt>
+                    <dd className="font-medium text-primary-900">{selectedPosition.tecnologia}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-blue-700">Seniority:</dt>
-                    <dd className="font-medium text-blue-900">
+                    <dt className="text-primary-700">Seniority:</dt>
+                    <dd className="font-medium text-primary-900">
                       {selectedPosition.seniority.replace('_', ' ')}
                     </dd>
                   </div>
-                  <div className="pt-2 border-t border-blue-200">
-                    <dt className="text-blue-700 mb-1">Description:</dt>
-                    <dd className="text-blue-900">{selectedPosition.descripcion}</dd>
+                  <div className="pt-2 border-t border-primary-200">
+                    <dt className="text-primary-700 mb-1">Description:</dt>
+                    <dd className="text-primary-900">{selectedPosition.descripcion}</dd>
                   </div>
                 </dl>
               </div>
@@ -183,7 +183,7 @@ export function GenerateChallenge() {
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
-                      className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                      className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
                       style={{ width: `${progress}%` }}
                     />
                   </div>

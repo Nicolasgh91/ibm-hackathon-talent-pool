@@ -2,11 +2,16 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Layout } from '@/components/Layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { UserRole } from '@/types'
+import { studentDemoEnabled } from '@/config/demoFlags'
 
 export function Dashboard() {
   const { user } = useAuth()
+
+  if (user?.rol === UserRole.ESTUDIANTE && studentDemoEnabled()) {
+    return <Navigate to="/student/dashboard" replace />
+  }
 
   const getQuickActions = () => {
     if (!user) return []
@@ -53,6 +58,17 @@ export function Dashboard() {
           description: 'Access your active challenges',
           link: '/my-challenges',
           icon: '💻',
+        },
+      ]
+    }
+
+    if (user.rol === UserRole.ESTUDIANTE) {
+      return [
+        {
+          title: 'Student dashboard',
+          description: 'Course, practices, collaborative repository (demo)',
+          link: '/student/dashboard',
+          icon: '🎓',
         },
       ]
     }
@@ -116,7 +132,7 @@ export function Dashboard() {
                 <CardTitle>Active Challenges</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-blue-600">0</p>
+                <p className="text-3xl font-bold text-primary-600">0</p>
                 <p className="text-sm text-gray-500 mt-1">No challenges yet</p>
               </CardContent>
             </Card>
@@ -157,19 +173,19 @@ export function Dashboard() {
               {user?.rol === UserRole.RECLUTADOR && (
                 <>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">1.</span>
+                    <span className="text-primary-600 font-bold mr-3">1.</span>
                     <p className="text-gray-700">Create an organization to get started</p>
                   </div>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">2.</span>
+                    <span className="text-primary-600 font-bold mr-3">2.</span>
                     <p className="text-gray-700">Define job positions with required skills</p>
                   </div>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">3.</span>
+                    <span className="text-primary-600 font-bold mr-3">3.</span>
                     <p className="text-gray-700">Generate AI-powered challenges for each position</p>
                   </div>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">4.</span>
+                    <span className="text-primary-600 font-bold mr-3">4.</span>
                     <p className="text-gray-700">Invite candidates and review their solutions</p>
                   </div>
                 </>
@@ -177,19 +193,19 @@ export function Dashboard() {
               {user?.rol === UserRole.CANDIDATO && (
                 <>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">1.</span>
+                    <span className="text-primary-600 font-bold mr-3">1.</span>
                     <p className="text-gray-700">Wait for challenge invitations from recruiters</p>
                   </div>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">2.</span>
+                    <span className="text-primary-600 font-bold mr-3">2.</span>
                     <p className="text-gray-700">Accept invitations and read challenge requirements</p>
                   </div>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">3.</span>
+                    <span className="text-primary-600 font-bold mr-3">3.</span>
                     <p className="text-gray-700">Write your solution using the code editor</p>
                   </div>
                   <div className="flex items-start">
-                    <span className="text-blue-600 font-bold mr-3">4.</span>
+                    <span className="text-primary-600 font-bold mr-3">4.</span>
                     <p className="text-gray-700">Submit and receive AI-powered feedback</p>
                   </div>
                 </>

@@ -1,73 +1,27 @@
-# React + TypeScript + Vite
+# Talent Pool — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React (Vite) + TypeScript + Tailwind CSS v4. Flujo principal: reclutador (organizaciones, puestos, desafíos, rankings) y candidato (invitaciones, resolver desafío, feedback).
 
-Currently, two official plugins are available:
+## Re-theme (demo hackathon)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Se aplicó un **re-theme visual** alineado al prototipo Talent Pool: paleta primaria teal (`#0d9488`), tipografía **Plus Jakarta Sans** y bloques de código en **JetBrains Mono**. Detalle de tokens: **[DESIGN_TOKENS.md](./DESIGN_TOKENS.md)**.
 
-## React Compiler
+### Navegación MVP vs prototipo
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+El prototipo HTML incluía secciones académicas (cursos, repositorio LLM, etc.). En esta build:
 
-## Expanding the ESLint configuration
+- El flujo **corporate** (`/dashboard`, organizaciones, puestos, desafíos, rankings, invitaciones, mis desafíos) es el del demo end-to-end.
+- Para rol **estudiante** (si el demo estudiante está activo en config), en el menú solo se muestra **Dashboard**; los enlaces a curso y repositorio están **ocultos** hasta tener backend (las rutas `/student/courses/*` siguen definidas en la app).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Scripts
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor de desarrollo (Vite) |
+| `npm run build` | Build de producción |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Tooling
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+ESLint, Prettier, Vitest, Playwright (e2e opcional).

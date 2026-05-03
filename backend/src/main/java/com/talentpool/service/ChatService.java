@@ -45,8 +45,8 @@ public class ChatService {
    * Send a chat message to the LLM assistant.
    *
    * <p>This method: 1. Generates or uses provided conversation ID 2. Sets up correlation ID for
-   * tracing 3. Calls the LLM via ChatAssistant 4. Tracks metrics (latency, tokens, cost) 5.
-   * Returns structured response
+   * tracing 3. Calls the LLM via ChatAssistant 4. Tracks metrics (latency, tokens, cost) 5. Returns
+   * structured response
    *
    * @param request the chat request
    * @param userId the authenticated user ID
@@ -55,9 +55,7 @@ public class ChatService {
   public ChatResponse chat(ChatRequest request, UUID userId) {
     // Generate conversation ID if not provided
     String conversationId =
-        request.conversationId() != null
-            ? request.conversationId()
-            : UUID.randomUUID().toString();
+        request.conversationId() != null ? request.conversationId() : UUID.randomUUID().toString();
 
     // Set up correlation ID for distributed tracing
     String correlationId = UUID.randomUUID().toString();
@@ -98,8 +96,7 @@ public class ChatService {
       // Calculate cost (free for Ollama)
       double cost = 0.0;
       if ("openai".equalsIgnoreCase(llmProvider)) {
-        cost =
-            (inputTokens / 1000.0 * inputCostPer1k) + (outputTokens / 1000.0 * outputCostPer1k);
+        cost = (inputTokens / 1000.0 * inputCostPer1k) + (outputTokens / 1000.0 * outputCostPer1k);
       }
       TokenUsage tokenUsage = new TokenUsage(inputTokens, outputTokens, cost);
 
@@ -107,12 +104,8 @@ public class ChatService {
       meterRegistry
           .counter("chat.requests.total", "provider", llmProvider, "status", "success")
           .increment();
-      meterRegistry
-          .counter("chat.tokens.input", "provider", llmProvider)
-          .increment(inputTokens);
-      meterRegistry
-          .counter("chat.tokens.output", "provider", llmProvider)
-          .increment(outputTokens);
+      meterRegistry.counter("chat.tokens.input", "provider", llmProvider).increment(inputTokens);
+      meterRegistry.counter("chat.tokens.output", "provider", llmProvider).increment(outputTokens);
       if (cost > 0) {
         meterRegistry.counter("chat.cost.usd", "provider", llmProvider).increment(cost);
       }

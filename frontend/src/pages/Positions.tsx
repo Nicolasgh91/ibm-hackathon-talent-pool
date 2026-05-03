@@ -172,7 +172,7 @@ export function Positions() {
                     <TableRow key={position.id}>
                       <TableCell className="font-medium">{position.titulo}</TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-800">
                           {position.tecnologia}
                         </span>
                       </TableCell>

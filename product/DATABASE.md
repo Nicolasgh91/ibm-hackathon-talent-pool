@@ -1,8 +1,8 @@
 # DATABASE.md — schema de base de datos de Talent Pool
 
 > Documento de referencia del modelo de datos. Acompaña al ER diagram y es la fuente de verdad para todas las decisiones de esquema.
-> Versión: 1.0
-> Última revisión: YYYY-MM-DD
+> Versión: 1.1
+> Última revisión: 2026-05-02
 > Motor: PostgreSQL 16 con extensiones `pgcrypto`, `citext` y `pgvector`.
 
 ---
@@ -35,7 +35,7 @@
 
 ---
 
-## 2. resumen de las 18 tablas
+## 2. resumen de las 24 tablas
 
 | # | tabla | propósito | dominio |
 |---|-------|----------|---------|
@@ -44,21 +44,25 @@
 | 3 | `membresias` | unión usuario-organización con rol | identidad |
 | 4 | `cursos` | unidades académicas | académico |
 | 5 | `inscripciones` | alumnos/auxiliares en un curso | académico |
-| 6 | `puestos` | vacantes corporativas | corporativo |
-| 7 | `desafios` | problemas técnicos generados por IA | núcleo |
-| 8 | `asignaciones_desafio` | uso de un desafío en un contexto | núcleo |
-| 9 | `invitaciones_desafio` | invitación nominal con token | núcleo |
-| 10 | `evaluaciones` | entrega de un candidato | núcleo |
-| 11 | `evaluaciones_versiones` | snapshots y autosave | núcleo |
-| 12 | `dimensiones_puntaje` | desglose multi-dimensional | núcleo |
-| 13 | `recomendaciones` | feedback de docentes a alumnos | puente |
-| 14 | `perfiles_talento` | perfil público para reclutadores | pool |
-| 15 | `habilidades_perfil` | skills declaradas y validadas | pool |
-| 16 | `consultas_llm` | repositorio colectivo de Q&A | colaboración |
-| 17 | `votos_consulta` | votación de utilidad | colaboración |
-| 18 | `prompt_versiones` | versionado de prompts | trazabilidad |
-| 19 | `llamadas_llm` | auditoría de costo y reproducibilidad | trazabilidad |
-| 20 | `eventos_auditoria` | log inmutable de acciones críticas | trazabilidad |
+| 6 | `puestos` | vacantes corporativas (perfil ampliado UC-006) | corporativo |
+| 7 | `roadmaps_practica` | roadmap de práctica generado por IA para un puesto (UC-023) | corporativo / práctica |
+| 8 | `modulos_roadmap` | módulos secuenciales de un roadmap | corporativo / práctica |
+| 9 | `progresos_roadmap` | avance de un candidato en un roadmap | corporativo / práctica |
+| 10 | `entregas_modulo` | entrega y feedback formativo por módulo (UC-024) | corporativo / práctica |
+| 11 | `desafios` | problemas técnicos generados por IA | núcleo |
+| 12 | `asignaciones_desafio` | uso de un desafío en un contexto | núcleo |
+| 13 | `invitaciones_desafio` | invitación nominal con token | núcleo |
+| 14 | `evaluaciones` | entrega de un candidato | núcleo |
+| 15 | `evaluaciones_versiones` | snapshots y autosave | núcleo |
+| 16 | `dimensiones_puntaje` | desglose multi-dimensional | núcleo |
+| 17 | `recomendaciones` | feedback de docentes a alumnos | puente |
+| 18 | `perfiles_talento` | perfil público para reclutadores | pool |
+| 19 | `habilidades_perfil` | skills declaradas y validadas | pool |
+| 20 | `consultas_llm` | repositorio colectivo de Q&A | colaboración |
+| 21 | `votos_consulta` | votación de utilidad | colaboración |
+| 22 | `prompt_versiones` | versionado de prompts | trazabilidad |
+| 23 | `llamadas_llm` | auditoría de costo y reproducibilidad | trazabilidad |
+| 24 | `eventos_auditoria` | log inmutable de acciones críticas | trazabilidad |
 
 ---
 
@@ -102,6 +106,7 @@ CREATE TABLE organizaciones (
   plan            VARCHAR(20) NOT NULL DEFAULT 'FREE',
   dominio_email   VARCHAR(255),
   logo_url        TEXT,
+  descripcion     TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_org_tipo CHECK (tipo IN ('EMPRESA', 'INSTITUCION')),
@@ -114,6 +119,7 @@ CREATE UNIQUE INDEX idx_organizaciones_dominio
 ```
 
 **Notas**:
+- `descripcion` (migración **V015**): texto opcional alineado al formulario de alta/edición de organización en el SPA.
 - `dominio_email` permite auto-sugerir membresía cuando alguien se registra con email cuyo dominio matchea (`juan@miempresa.com` → sugerir membresía a "miempresa").
 - Una organización puede ofrecer cursos Y publicar puestos (ej: una empresa con academy interna). El `tipo` indica el caso primario, no es excluyente.
 
@@ -236,6 +242,10 @@ CREATE TABLE puestos (
   tecnologia_principal  VARCHAR(100) NOT NULL,
   seniority             VARCHAR(20) NOT NULL,
   descripcion           TEXT,
+  herramientas          JSONB NOT NULL DEFAULT '[]',
+  skills_tecnicas       JSONB NOT NULL DEFAULT '[]',
+  skills_blandas        JSONB NOT NULL DEFAULT '[]',
+  roadmap_publico_habilitado BOOLEAN NOT NULL DEFAULT TRUE,
   estado                VARCHAR(20) NOT NULL DEFAULT 'BORRADOR',
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -251,6 +261,95 @@ CREATE INDEX idx_puestos_estado ON puestos(estado) WHERE estado = 'ABIERTO';
 **Reglas**:
 - `reclutador_id` debe tener membresía `RECLUTADOR` activa en la `organizacion_id`.
 - Un puesto en estado `BORRADOR` no recibe candidatos. `ABIERTO` sí. `PAUSADO` y `CERRADO` no aceptan nuevas evaluaciones pero conservan las históricas.
+- `herramientas`, `skills_tecnicas`, `skills_blandas`: listas estructuradas (JSON); mínimos y forma exacta según UC-006 en capa de aplicación.
+- `roadmap_publico_habilitado`: si es `FALSE`, no se muestra el roadmap de práctica en la página pública del puesto (UC-023); no borra `roadmaps_practica` existentes.
+
+#### tabla `roadmaps_practica`
+Roadmap de práctica generado para un puesto (UC-023). Una fila activa por generación completa; regeneración puede archivar la versión anterior según política de producto.
+
+```sql
+CREATE TABLE roadmaps_practica (
+  id                    UUID PRIMARY KEY,
+  puesto_id             UUID NOT NULL REFERENCES puestos(id) ON DELETE CASCADE,
+  prompt_version_id     UUID NOT NULL REFERENCES prompt_versiones(id) ON DELETE RESTRICT,
+  estado                VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_roadmap_pract_estado CHECK (estado IN ('ACTIVO', 'ARCHIVADO'))
+);
+
+CREATE INDEX idx_roadmaps_practica_puesto ON roadmaps_practica(puesto_id);
+CREATE INDEX idx_roadmaps_practica_activo ON roadmaps_practica(puesto_id, estado) WHERE estado = 'ACTIVO';
+```
+
+#### tabla `modulos_roadmap`
+Módulos del roadmap (6–10 típicamente). Al regenerar un módulo, la fila anterior pasa a `ARCHIVADO` (UC-023).
+
+```sql
+CREATE TABLE modulos_roadmap (
+  id                    UUID PRIMARY KEY,
+  roadmap_practica_id   UUID NOT NULL REFERENCES roadmaps_practica(id) ON DELETE CASCADE,
+  orden                 INTEGER NOT NULL,
+  tipo_modulo           VARCHAR(40) NOT NULL,
+  titulo                VARCHAR(300) NOT NULL,
+  enunciado_publico     TEXT NOT NULL,
+  minutos_estimados     INTEGER NOT NULL,
+  prerequisitos_modulo_ids JSONB NOT NULL DEFAULT '[]',
+  skills_practicadas    JSONB NOT NULL DEFAULT '[]',
+  estado                VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_mod_roadmap_estado CHECK (estado IN ('BORRADOR', 'ACTIVO', 'ARCHIVADO')),
+  CONSTRAINT chk_mod_roadmap_minutos CHECK (minutos_estimados > 0 AND minutos_estimados <= 480)
+);
+
+CREATE INDEX idx_modulos_roadmap_roadmap ON modulos_roadmap(roadmap_practica_id);
+CREATE UNIQUE INDEX idx_modulos_roadmap_orden ON modulos_roadmap(roadmap_practica_id, orden);
+```
+
+**Notas**: valores de `tipo_modulo` alineados a UC-023 (`SETUP_ENTORNO`, `PRIMER_TICKET`, etc.) — validar con CHECK o enum en migración.
+
+#### tabla `progresos_roadmap`
+Una fila por candidato y roadmap (identificado por `roadmap_practica_id`). UC-024 / UC-025.
+
+```sql
+CREATE TABLE progresos_roadmap (
+  id                    UUID PRIMARY KEY,
+  roadmap_practica_id   UUID NOT NULL REFERENCES roadmaps_practica(id) ON DELETE CASCADE,
+  candidato_id          UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  estado                VARCHAR(20) NOT NULL DEFAULT 'EN_PROGRESO',
+  minutos_acumulados    INTEGER NOT NULL DEFAULT 0,
+  roadmap_completado_antes_de_postular BOOLEAN,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_progreso_rm_estado CHECK (estado IN ('EN_PROGRESO', 'COMPLETADO', 'ABANDONADO')),
+  CONSTRAINT uq_progreso_roadmap_candidato UNIQUE (roadmap_practica_id, candidato_id)
+);
+
+CREATE INDEX idx_progresos_roadmap_candidato ON progresos_roadmap(candidato_id);
+```
+
+#### tabla `entregas_modulo`
+Entregas y retroalimentación formativa por módulo; enlaza a `llamadas_llm` para auditoría de costo (UC-024; asignación de costo **ADR-0008**).
+
+```sql
+CREATE TABLE entregas_modulo (
+  id                    UUID PRIMARY KEY,
+  modulo_roadmap_id     UUID NOT NULL REFERENCES modulos_roadmap(id) ON DELETE RESTRICT,
+  progreso_roadmap_id   UUID NOT NULL REFERENCES progresos_roadmap(id) ON DELETE CASCADE,
+  candidato_id          UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  contenido_entrega     TEXT,
+  feedback_formativo    JSONB,
+  estado                VARCHAR(20) NOT NULL DEFAULT 'BORRADOR',
+  llamada_llm_id        UUID REFERENCES llamadas_llm(id) ON DELETE SET NULL,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_entrega_mod_estado CHECK (estado IN ('BORRADOR', 'ENTREGADA', 'EVALUADA'))
+);
+
+CREATE INDEX idx_entregas_modulo_progreso ON entregas_modulo(progreso_roadmap_id);
+CREATE INDEX idx_entregas_modulo_modulo ON entregas_modulo(modulo_roadmap_id);
+```
 
 ---
 
@@ -268,18 +367,28 @@ CREATE TABLE desafios (
   titulo              VARCHAR(200) NOT NULL,
   enunciado           TEXT NOT NULL,
   rubrica_oculta      JSONB NOT NULL,
-  contexto_origen     VARCHAR(20) NOT NULL,
+  contexto_origen     VARCHAR(30) NOT NULL,
   tecnologia          VARCHAR(100) NOT NULL,
   seniority           VARCHAR(20) NOT NULL,
   minutos_estimados   INTEGER NOT NULL DEFAULT 60,
   es_publico          BOOLEAN NOT NULL DEFAULT FALSE,
+  plan_evaluacion_id  UUID,
+  tipo_desafio        VARCHAR(30),
+  peso                NUMERIC(5,2),
+  cursos_integrados   JSONB,
   estado              VARCHAR(20) NOT NULL DEFAULT 'BORRADOR',
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_desafio_contexto CHECK (contexto_origen IN ('CORPORATIVO', 'ACADEMICO', 'BIBLIOTECA')),
+  CONSTRAINT chk_desafio_contexto CHECK (contexto_origen IN ('CORPORATIVO', 'ACADEMICO', 'BIBLIOTECA', 'ACADEMICO_INTEGRADOR')),
   CONSTRAINT chk_desafio_seniority CHECK (seniority IN ('TRAINEE', 'JR', 'SSR', 'SR', 'LEAD')),
   CONSTRAINT chk_desafio_estado CHECK (estado IN ('BORRADOR', 'REVISION', 'ACTIVO', 'ARCHIVADO')),
-  CONSTRAINT chk_desafio_minutos CHECK (minutos_estimados > 0 AND minutos_estimados <= 480)
+  CONSTRAINT chk_desafio_minutos CHECK (minutos_estimados > 0 AND minutos_estimados <= 480),
+  CONSTRAINT chk_desafio_tipo CHECK (
+    tipo_desafio IS NULL OR tipo_desafio IN (
+      'TECNICO_PURO', 'TECNICO_CON_STACK', 'COMUNICACION', 'DOCUMENTACION', 'INTEGRACION'
+    )
+  ),
+  CONSTRAINT chk_desafio_peso CHECK (peso IS NULL OR (peso >= 0 AND peso <= 100))
 );
 
 CREATE INDEX idx_desafios_creador ON desafios(creador_usuario_id);
@@ -287,6 +396,7 @@ CREATE INDEX idx_desafios_organizacion ON desafios(organizacion_id);
 CREATE INDEX idx_desafios_publicos ON desafios(es_publico, estado) WHERE es_publico = TRUE AND estado = 'ACTIVO';
 CREATE INDEX idx_desafios_tecnologia ON desafios(tecnologia, seniority);
 CREATE INDEX idx_desafios_rubrica_gin ON desafios USING GIN (rubrica_oculta);
+CREATE INDEX idx_desafios_plan_evaluacion ON desafios(plan_evaluacion_id) WHERE plan_evaluacion_id IS NOT NULL;
 ```
 
 **Notas críticas**:
@@ -294,6 +404,9 @@ CREATE INDEX idx_desafios_rubrica_gin ON desafios USING GIN (rubrica_oculta);
 - `organizacion_id` es nullable: un desafío de biblioteca pública no pertenece a ninguna org.
 - `es_publico = TRUE` permite que el desafío aparezca en biblioteca para reutilización por terceros.
 - `prompt_version_id` registra qué versión del prompt generador se usó. Cambios de prompt → nuevos desafíos con nueva versión, los históricos quedan ligados a su versión original (reproducibilidad).
+- **`plan_evaluacion_id`**: mismo UUID compartido por todas las filas `desafios` que forman un plan de evaluación (UC-007). No es FK; correlaciona el grupo. Índice para listar plan completo.
+- **`tipo_desafio`** y **`peso`**: pesos del plan suman 100 % por `plan_evaluacion_id` (validar en servicio al cerrar plan).
+- **`contexto_origen = ACADEMICO_INTEGRADOR`** (UC-026): **`cursos_integrados`** es JSONB con los UUID de exactamente dos `cursos`; validación en aplicación.
 
 **Estructura sugerida de `rubrica_oculta`**:
 ```json
@@ -341,11 +454,12 @@ CREATE TABLE asignaciones_desafio (
   fecha_cierre    TIMESTAMPTZ,
   max_intentos    INTEGER NOT NULL DEFAULT 1,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_asig_tipo CHECK (tipo IN ('PUESTO', 'CURSO', 'PUBLICO')),
+  CONSTRAINT chk_asig_tipo CHECK (tipo IN ('PUESTO', 'CURSO', 'PUBLICO', 'INTEGRADOR')),
   CONSTRAINT chk_asig_target CHECK (
     (tipo = 'PUESTO' AND puesto_id IS NOT NULL AND curso_id IS NULL) OR
     (tipo = 'CURSO' AND curso_id IS NOT NULL AND puesto_id IS NULL) OR
-    (tipo = 'PUBLICO' AND puesto_id IS NULL AND curso_id IS NULL)
+    (tipo = 'PUBLICO' AND puesto_id IS NULL AND curso_id IS NULL) OR
+    (tipo = 'INTEGRADOR' AND puesto_id IS NULL AND curso_id IS NULL)
   ),
   CONSTRAINT chk_asig_fechas CHECK (fecha_cierre IS NULL OR fecha_cierre > fecha_apertura),
   CONSTRAINT chk_asig_intentos CHECK (max_intentos > 0 AND max_intentos <= 10)
@@ -358,6 +472,8 @@ CREATE INDEX idx_asignaciones_ventana ON asignaciones_desafio(fecha_apertura, fe
 ```
 
 **Patrón clave**: el constraint `chk_asig_target` garantiza que cada asignación apunta a UN solo contexto, alineado con el `tipo`. Esto evita estados inválidos (asignación de tipo PUESTO sin puesto_id, o con puesto_id Y curso_id).
+
+**UC-026 (`INTEGRADOR`)**: los dos `curso_id` viven en `desafios.cursos_integrados`; la asignación solo ancla el desafío al flujo “integrador” sin `puesto_id` ni `curso_id`. La vinculación al estudiante es por evaluación / invitación según implementación.
 
 ---
 
@@ -825,6 +941,9 @@ USUARIO (1) ──────── (N) RECOMENDACION (recibidas)
 
 ORGANIZACION (1) ─── (N) CURSO ──────────── (N) INSCRIPCION ── (1) USUARIO
 ORGANIZACION (1) ─── (N) PUESTO ─────────── (1) USUARIO (reclutador)
+PUESTO (1) ───────── (N) ROADMAP_PRACTICA ─── (N) MODULO_ROADMAP
+USUARIO (1) ───────── (N) PROGRESO_ROADMAP ─── (1) ROADMAP_PRACTICA
+PROGRESO_ROADMAP (1) ─ (N) ENTREGA_MODULO ──── (1) MODULO_ROADMAP
 
 DESAFIO (1) ───────── (N) ASIGNACION_DESAFIO ── (0..1) PUESTO
                                               └─ (0..1) CURSO
@@ -855,6 +974,7 @@ Algunas reglas no se pueden expresar puramente con CHECK constraints en SQL. Est
 | Una evaluación solo se acepta si la asignación está dentro de ventana | Servicio `EvaluacionService.iniciar()` |
 | Un candidato no excede `max_intentos` por asignación | Servicio `EvaluacionService.iniciar()` |
 | Suma de `peso` de dimensiones de una evaluación = 1.0 | Servicio `EvaluacionService.cerrar()` |
+| Suma de `desafios.peso` por mismo `plan_evaluacion_id` = 100 (%) | Servicio generación plan UC-007 |
 | Solo el receptor o el emisor pueden cambiar `visible_para_pool` de una recomendación | Servicio `RecomendacionService.actualizar()` |
 | Un usuario solo ve recomendaciones de otros si tiene rol RECLUTADOR o es el receptor | Servicio + RLS futuro |
 | Solo una `prompt_versiones` con estado ACTIVA por nombre | Garantizado por índice parcial |
@@ -864,34 +984,53 @@ Algunas reglas no se pueden expresar puramente con CHECK constraints en SQL. Est
 
 ## 6. estrategia de migraciones (Flyway)
 
-**Orden propuesto** (cada V es una migración separada):
+**Estado real en `main`** (`backend/src/main/resources/db/migration/`):
 
 ```
-V1__create_extensions.sql                  -- pgcrypto, citext
-V2__create_usuarios.sql
-V3__create_organizaciones.sql
-V4__create_membresias.sql
-V5__create_cursos.sql
-V6__create_inscripciones.sql
-V7__create_puestos.sql
-V8__create_prompt_versiones.sql            -- antes de desafios (FK)
-V9__create_desafios.sql
-V10__create_asignaciones_desafio.sql
-V11__create_invitaciones_desafio.sql
-V12__create_evaluaciones.sql
-V13__create_evaluaciones_versiones.sql
-V14__create_dimensiones_puntaje.sql
-V15__create_perfiles_talento.sql
-V16__create_habilidades_perfil.sql
-V17__create_recomendaciones.sql
-V18__create_consultas_llm.sql
-V19__create_votos_consulta.sql
-V20__create_llamadas_llm.sql
-V21__create_eventos_auditoria.sql
-V22__seed_prompt_versiones_iniciales.sql   -- datos iniciales
-V23__create_triggers_updated_at.sql        -- triggers para updated_at
-V24__create_function_recomputar_votos.sql  -- trigger de denormalización
+V001__create_extensions.sql                           -- pgcrypto, citext, pgvector
+V002__create_usuarios.sql
+V003__create_organizaciones.sql
+V004__create_membresias.sql
+V005__create_puestos.sql                              -- columnas base; UC-006 fields llegan en V016
+V006__create_prompt_versiones.sql                     -- antes de desafios (FK)
+V007__create_desafios.sql
+V008__create_asignaciones_desafio.sql
+V009__create_invitaciones_desafio.sql
+V010__create_evaluaciones.sql
+V011__create_dimensiones_puntaje.sql
+V012__create_perfiles_talento.sql
+V013__seed_demo_data.sql                              -- semillas demo (recruiter, org, candidatos)
+V014__seed_student_demo.sql                           -- semilla estudiante demo
+V015__add_descripcion_to_organizaciones.sql           -- UC-004 descripcion en SPA
+V016__alter_puestos_uc006_fields.sql                  -- herramientas, skills_*, roadmap_publico_habilitado
+V017__alter_desafios_plan_evaluacion.sql              -- plan_evaluacion_id, tipo_desafio, peso, cursos_integrados
+V018__create_evaluaciones_versiones.sql               -- snapshots autosave UC-017
+V019__create_llamadas_llm.sql                         -- audit costo/latencia/tokens (DATABASE.md §1.4)
+V020__create_eventos_auditoria.sql                    -- log inmutable de acciones críticas
+V021__seed_canonical_prompt_versiones.sql             -- evaluador_codigo ACTIVA, juez_evals EXPERIMENTAL
 ```
+
+**Orden previsto a futuro** (Phase 5+ académico, Phase 6 corporate, Phase 3 hardening):
+
+```
+V022__create_cursos.sql
+V023__create_inscripciones.sql
+V024__create_habilidades_perfil.sql
+V025__create_recomendaciones.sql
+V026__create_consultas_llm.sql
+V027__create_votos_consulta.sql
+V028__create_roadmaps_practica.sql
+V029__create_modulos_roadmap.sql
+V030__create_progresos_roadmap.sql
+V031__create_entregas_modulo.sql
+V032__create_triggers_updated_at_universal.sql        -- triggers updated_at homogéneos
+V033__create_function_recomputar_votos.sql            -- denormalización votos_positivos
+```
+
+**Notas**:
+- Las semillas demo (V013, V014) seguirán existiendo en `dev` y `test`; cuando exista perfil `prod` se moverán a un script administrativo aparte.
+- `generador_desafio` ACTIVA fue insertado por V013 (versión `1.0.0-mock`); V021 sólo agrega `evaluador_codigo` y `juez_evals` para evitar conflicto con el índice parcial `idx_prompt_activa`.
+- DATABASE.md §3.7 (`consultas_llm`) y `llamadas_llm.consulta_llm_id` quedan sin FK declarada hasta V026.
 
 **Reglas**:
 - Migraciones inmutables una vez en `main` (regla de `CONTRIBUTING.md`).
@@ -986,5 +1125,6 @@ Antes de mergear cualquier migración nueva, verificar:
 - DER (diagrama entidad-relación): [`database/DER.md`](../database/DER.md)
 - ADR-0002: estrategia de RAG y vector store (define uso de pgvector)
 - ADR-0003: estrategia de evaluación de LLMs (define `prompt_versiones`)
+- ADR-0008: asignación de costos LLM del roadmap de práctica (UC-024)
 - `ARCHITECTURE.md` §4: modelo de datos (visión de alto nivel)
 - `CONTRIBUTING.md` §6.3: convenciones SQL

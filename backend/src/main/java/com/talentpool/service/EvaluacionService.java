@@ -2,6 +2,7 @@ package com.talentpool.service;
 
 import com.talentpool.api.dto.EvaluacionResponse.CandidateRankingEntry;
 import com.talentpool.api.dto.EvaluacionResponse.DimensionResponse;
+import com.talentpool.api.dto.EvaluacionResponse.GlobalCandidateRanking;
 import com.talentpool.api.dto.SubmitEvaluationRequest;
 import com.talentpool.api.exception.InvalidInvitationException;
 import com.talentpool.api.exception.ResourceNotFoundException;
@@ -14,8 +15,13 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -34,6 +40,7 @@ public class EvaluacionService {
   @Inject EntityManager em;
   @Inject Instance<MockEvaluator> mockEvaluator;
   @Inject InvitacionService invitacionService;
+
   @ConfigProperty(name = "app.llm.use-mock-llm", defaultValue = "false")
   boolean useMockLlm;
 
@@ -45,7 +52,8 @@ public class EvaluacionService {
    */
   @Transactional
   public Evaluacion submitForEvaluation(SubmitEvaluationRequest request) {
-    String tokenPrefix = request.token().length() > 8 ? request.token().substring(0, 8) : request.token();
+    String tokenPrefix =
+        request.token().length() > 8 ? request.token().substring(0, 8) : request.token();
     LOG.infof("Submitting evaluation for token: %s...", tokenPrefix);
 
     // Validate invitation token before consuming it.
@@ -91,11 +99,8 @@ public class EvaluacionService {
 
     // Launch async evaluation
     UUID evaluacionId = evaluacion.id;
-    CompletableFuture.runAsync(() -> evaluateAsync(
-        evaluacionId,
-        request.codigoEntregado(),
-        request.lenguaje()
-    ));
+    CompletableFuture.runAsync(
+        () -> evaluateAsync(evaluacionId, request.codigoEntregado(), request.lenguaje()));
 
     return evaluacion;
   }
@@ -124,24 +129,25 @@ public class EvaluacionService {
   public List<CandidateRankingEntry> getRankingForPuesto(UUID puestoId) {
     LOG.infof("Getting ranking for position: %s", puestoId);
 
-    List<UUID> asignacionIds = em.createQuery(
-            "SELECT a.id FROM AsignacionDesafio a WHERE a.puestoId = :puestoId",
-            UUID.class)
-        .setParameter("puestoId", puestoId)
-        .getResultList();
+    List<UUID> asignacionIds =
+        em.createQuery(
+                "SELECT a.id FROM AsignacionDesafio a WHERE a.puestoId = :puestoId", UUID.class)
+            .setParameter("puestoId", puestoId)
+            .getResultList();
     if (asignacionIds.isEmpty()) {
       return List.of(); // No assignments yet
     }
 
     // Get all evaluated submissions, ordered by score
-    List<Object[]> results = em.createQuery(
-            "SELECT e, u.email, u.nombreCompleto " +
-            "FROM Evaluacion e JOIN Usuario u ON e.candidatoId = u.id " +
-            "WHERE e.asignacionId IN :asignacionIds AND e.estado = 'EVALUADA' " +
-            "ORDER BY e.puntajeTotal DESC, e.evaluadoEn ASC",
-            Object[].class)
-        .setParameter("asignacionIds", asignacionIds)
-        .getResultList();
+    List<Object[]> results =
+        em.createQuery(
+                "SELECT e, u.email, u.nombreCompleto "
+                    + "FROM Evaluacion e JOIN Usuario u ON e.candidatoId = u.id "
+                    + "WHERE e.asignacionId IN :asignacionIds AND e.estado = 'EVALUADA' "
+                    + "ORDER BY e.puntajeTotal DESC, e.evaluadoEn ASC",
+                Object[].class)
+            .setParameter("asignacionIds", asignacionIds)
+            .getResultList();
 
     // Build ranking entries
     List<CandidateRankingEntry> ranking = new ArrayList<>();
@@ -154,29 +160,26 @@ public class EvaluacionService {
 
       // Get dimension scores
       List<DimensionPuntaje> dimensiones = DimensionPuntaje.findByEvaluacion(evaluacion.id);
-      List<DimensionResponse> dimensionResponses = dimensiones.stream()
-          .map(DimensionResponse::from)
-          .toList();
+      List<DimensionResponse> dimensionResponses =
+          dimensiones.stream().map(DimensionResponse::from).toList();
 
-      ranking.add(new CandidateRankingEntry(
-          posicion++,
-          evaluacion.candidatoId,
-          email,
-          nombre,
-          evaluacion.puntajeTotal,
-          dimensionResponses,
-          evaluacion.minutosEmpleados,
-          evaluacion.evaluadoEn
-      ));
+      ranking.add(
+          new CandidateRankingEntry(
+              posicion++,
+              evaluacion.candidatoId,
+              email,
+              nombre,
+              evaluacion.puntajeTotal,
+              dimensionResponses,
+              evaluacion.minutosEmpleados,
+              evaluacion.evaluadoEn));
     }
 
     LOG.infof("Ranking complete: %d candidates", ranking.size());
     return ranking;
   }
 
-  /**
-   * Async evaluation processing (runs in background).
-   */
+  /** Async evaluation processing (runs in background). */
   private void evaluateAsync(UUID evaluacionId, String codigo, String lenguaje) {
     try {
       LOG.infof("Starting async evaluation for: %s", evaluacionId);
@@ -194,9 +197,7 @@ public class EvaluacionService {
     }
   }
 
-  /**
-   * Update evaluation with results (separate transaction).
-   */
+  /** Update evaluation with results (separate transaction). */
   @Transactional
   void updateEvaluacionWithResults(UUID evaluacionId, MockEvaluator.EvaluationResult result) {
     Evaluacion evaluacion = em.find(Evaluacion.class, evaluacionId);
@@ -226,9 +227,7 @@ public class EvaluacionService {
     LOG.infof("Evaluation results saved: %s", evaluacionId);
   }
 
-  /**
-   * Mark evaluation as failed.
-   */
+  /** Mark evaluation as failed. */
   @Transactional
   void markEvaluationAsFailed(UUID evaluacionId) {
     Evaluacion evaluacion = em.find(Evaluacion.class, evaluacionId);
@@ -238,18 +237,15 @@ public class EvaluacionService {
     }
   }
 
-  /**
-   * Get or create candidate user ID from email.
-   */
+  /** Get or create candidate user ID from email. */
   private UUID getCandidateId(String email) {
     // Try to find existing user
-    Usuario usuario = em.createQuery(
-            "SELECT u FROM Usuario u WHERE u.email = :email",
-            Usuario.class)
-        .setParameter("email", email.toLowerCase())
-        .getResultStream()
-        .findFirst()
-        .orElse(null);
+    Usuario usuario =
+        em.createQuery("SELECT u FROM Usuario u WHERE u.email = :email", Usuario.class)
+            .setParameter("email", email.toLowerCase())
+            .getResultStream()
+            .findFirst()
+            .orElse(null);
 
     if (usuario != null) {
       return usuario.id;
@@ -272,6 +268,64 @@ public class EvaluacionService {
       return mockEvaluator.get().evaluate(codigo, lenguaje);
     }
     throw new UnsupportedOperationException("Real evaluation engine is not enabled yet");
+  }
+
+  public List<Evaluacion> listByAsignacionIdOptional(UUID asignacionId) {
+    if (asignacionId == null) {
+      return Evaluacion.listAll();
+    }
+    return Evaluacion.list("asignacionId = ?1 order by createdAt desc", asignacionId);
+  }
+
+  public List<Evaluacion> listForCandidato(UUID candidatoId) {
+    return Evaluacion.list("candidatoId = ?1 order by createdAt desc", candidatoId);
+  }
+
+  public Evaluacion findLatestByAsignacion(UUID asignacionId) {
+    return Evaluacion.find("asignacionId = ?1 order by createdAt desc", asignacionId).firstResult();
+  }
+
+  /** Aggregated global rankings (mock-compatible keys via JSON property names). */
+  public List<GlobalCandidateRanking> aggregateGlobalRankings() {
+    List<Evaluacion> evaluated =
+        em.createQuery(
+                "SELECT e FROM Evaluacion e WHERE e.estado = 'EVALUADA' ORDER BY e.evaluadoEn DESC",
+                Evaluacion.class)
+            .setMaxResults(2000)
+            .getResultList();
+    record Agg(BigDecimal sum, int count, Instant last, String nombre, String email) {}
+    Map<UUID, Agg> byCandidate = new HashMap<>();
+    for (Evaluacion e : evaluated) {
+      Usuario u = Usuario.findByIdOptional(e.candidatoId);
+      String nombre = u != null ? u.nombreCompleto : "";
+      String email = u != null ? u.email : "";
+      BigDecimal score = e.puntajeTotal != null ? e.puntajeTotal : BigDecimal.ZERO;
+      Agg cur = byCandidate.get(e.candidatoId);
+      if (cur == null) {
+        byCandidate.put(e.candidatoId, new Agg(score, 1, e.evaluadoEn, nombre, email));
+      } else {
+        BigDecimal newSum = cur.sum().add(score);
+        int newCount = cur.count() + 1;
+        Instant newLast = cur.last();
+        if (e.evaluadoEn != null && (newLast == null || e.evaluadoEn.isAfter(newLast))) {
+          newLast = e.evaluadoEn;
+        }
+        String nm = !nombre.isBlank() ? nombre : cur.nombre();
+        String em = !email.isBlank() ? email : cur.email();
+        byCandidate.put(e.candidatoId, new Agg(newSum, newCount, newLast, nm, em));
+      }
+    }
+    List<GlobalCandidateRanking> rows = new ArrayList<>();
+    for (Map.Entry<UUID, Agg> en : byCandidate.entrySet()) {
+      Agg a = en.getValue();
+      double avg =
+          a.sum().divide(BigDecimal.valueOf(a.count()), 2, RoundingMode.HALF_UP).doubleValue();
+      rows.add(
+          new GlobalCandidateRanking(
+              en.getKey(), a.nombre(), a.email(), avg, a.count(), a.last()));
+    }
+    rows.sort(Comparator.comparingDouble(GlobalCandidateRanking::puntajePromedio).reversed());
+    return rows;
   }
 }
 

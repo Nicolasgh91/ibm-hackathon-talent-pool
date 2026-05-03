@@ -11,14 +11,11 @@ import java.util.UUID;
  * <p>Used by POST /api/v1/challenges endpoint.
  */
 public record GenerateChallengeRequest(
-    @NotNull(message = "Position ID is required")
-    UUID puestoId,
-
+    @NotNull(message = "Position ID is required") UUID puestoId,
     @Min(value = 15, message = "Estimated time must be at least 15 minutes")
-    Integer minutosEstimados, // Optional, default 60
-
+        Integer minutosEstimados, // Optional, default 60
     @Size(max = 1000, message = "Additional context must not exceed 1000 characters")
-    String contextoAdicional // Optional hints for LLM
-) {}
+        String contextoAdicional // Optional hints for LLM
+    ) {}
 
 // Made with Bob

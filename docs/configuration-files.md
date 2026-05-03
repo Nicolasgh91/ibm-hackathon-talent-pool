@@ -9,10 +9,11 @@
 ## Demo Overrides (Hackathon)
 
 Current demo-oriented runtime settings:
-- CORS enabled for `http://localhost:5173` and `http://localhost:3000` with credentials allowed.
+- CORS enabled for local frontend dev on ports **5173** and **3000**, both `localhost` and `127.0.0.1` (distinct browser origins), with credentials allowed. Override via `CORS_ORIGINS` only when needed; avoid setting it to an empty string or the allowlist becomes empty and every browser origin is rejected.
 - LLM timeout reduced to `30s` for both Ollama and OpenAI model config.
 - Added `app.llm.use-mock-llm` (`true` in dev, `false` in prod).
 - Added `quarkus.langchain4j.chat-model.provider` explicit per profile.
+- OpenAI: base YAML must not set `quarkus.langchain4j.openai.api-key` to empty (`${VAR:}`); dev uses `quarkus.langchain4j.openai.enable-integration=false`; prod sets `api-key` from `OPENAI_API_KEY`.
 - Added `app.invitations.base-url` and `app.invitations.default-expiry-days`.
 
 ---
@@ -72,10 +73,11 @@ quarkus:
     host: 0.0.0.0
     cors:
       ~: true
-      origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+      origins: ${CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000}
       methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
       headers: accept,authorization,content-type,x-requested-with
       exposed-headers: Content-Disposition
+      access-control-allow-credentials: true
       access-control-max-age: 86400
     
     # Request limits
@@ -236,12 +238,12 @@ mp:
         location: publicKey.pem
 
 # =============================================================================
-# LangChain4j Configuration
+# LangChain4j Configuration (see application.yml — uses quarkus.langchain4j.*)
 # =============================================================================
 langchain4j:
   # OpenAI Configuration (Production)
   openai:
-    api-key: ${OPENAI_API_KEY:}
+    # Production: use quarkus.langchain4j.openai.api-key=${OPENAI_API_KEY} in application-prod.yml (never empty default).
     base-url: https://api.openai.com/v1
     timeout: 60s
     max-retries: 3
@@ -383,6 +385,9 @@ This profile extends development defaults. **Dev Services** (PostgreSQL y Redis 
 
 - **Con Docker compatible**: `export QUARKUS_DEVSERVICES_ENABLED=true` antes de `quarkus:dev` para levantar contenedores automáticos según `application-dev.yml`.
 - **Sin Dev Services**: Postgres y Redis deben estar ya disponibles (por ejemplo `docker compose -f infra/compose/docker-compose.dev.yml up -d`) y alinear `DB_JDBC_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_URL` con ese stack.
+- **Logging en dev**: nivel raíz `INFO`; categorías con map anidada `category.<nombre>.level` (no uses el atajo YAML `"paquete": DEBUG`: SmallRye puede emitir claves inválidas tipo `quarkus.log.category."paquete""` y Quarkus las ignora). `min-level: TRACE` en dev permite `BasicBinder` en TRACE. Tras quitar un `ConfigSource` MP o su clase, ejecutá **`./mvnw clean`** para no dejar en `target/` un `META-INF/services/...ConfigSource` obsoleto (Quarkus falla con `ServiceConfigurationError: Provider ... not found`).
+- **Ruido `ProcessBuilder` / `stty`**: además del root `INFO`, en `application-dev.yml` se fija la categoría `"java.lang.ProcessBuilder"` a `INFO` (logger puente del JDK con `JBossSystemLogger`).
+- **CORS en dev**: `application-dev.yml` fija `quarkus.http.cors.origins` para `localhost` y `127.0.0.1` en los puertos **5173** y **3000**. El navegador envía `Origin` según la URL de la pestaña (`http://localhost:5173` ≠ `http://127.0.0.1:5173`); si falta uno de los dos, aparece `403 CORS Rejected - Invalid origin`.
 
 ```yaml
 # =============================================================================
@@ -392,9 +397,18 @@ This profile extends development defaults. **Dev Services** (PostgreSQL y Redis 
 # =============================================================================
 
 quarkus:
+  http:
+    cors:
+      origins: http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
   # Dev Services — opt-in (ver texto arriba)
   devservices:
     enabled: ${QUARKUS_DEVSERVICES_ENABLED:false}
+
+  langchain4j:
+    chat-model:
+      provider: ollama
+    openai:
+      enable-integration: false
   
   # PostgreSQL Dev Services
   datasource:
@@ -444,16 +458,16 @@ quarkus:
     clean-at-start: false  # Set to true if you want fresh DB on each restart
     baseline-on-migrate: true
   
-  # Logging - More verbose in development
+  # Logging - root INFO; categorías con .level (map anidada)
   log:
-    level: DEBUG
+    level: INFO
+    min-level: TRACE
     category:
-      "com.talentpool": DEBUG
-      "io.quarkus": INFO
-      "org.hibernate.SQL": DEBUG
-      "org.hibernate.type.descriptor.sql.BasicBinder": TRACE
-      "org.flywaydb": DEBUG
-      "dev.langchain4j": DEBUG
+      com.talentpool:
+        level: DEBUG
+      org.hibernate.SQL:
+        level: DEBUG
+      # ... etc.
     console:
       color: true
   
@@ -492,9 +506,7 @@ langchain4j:
       temperature: 0.3
       num-predict: 2000
   
-  # Disable OpenAI in dev (unless explicitly testing)
-  openai:
-    api-key: ${OPENAI_API_KEY:}
+  # Dev profile sets quarkus.langchain4j.openai.enable-integration=false (see application-dev.yml).
 
 # =============================================================================
 # Application - Development Overrides
@@ -1099,7 +1111,7 @@ export IBM_COS_INSTANCE_ID="your-instance-id"
 # Observability
 export OTEL_EXPORTER_OTLP_ENDPOINT="https://your-otel-collector:4317"
 
-# CORS
+# CORS (production); leave unset locally to use YAML defaults including 127.0.0.1 dev origins
 export CORS_ORIGINS="https://app.talentpool.io,https://www.talentpool.io"
 
 # Alerts

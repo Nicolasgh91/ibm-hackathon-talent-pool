@@ -17,17 +17,31 @@ import { Invitations } from '@/pages/Invitations'
 import { MyChallenges } from '@/pages/MyChallenges'
 import { SolveChallenge } from '@/pages/SolveChallenge'
 import { EvaluationFeedback } from '@/pages/EvaluationFeedback'
+import { UserRole } from '@/types'
+import { StudentDemoGate } from '@/components/student/StudentDemoGate'
+import { StudentDashboard } from '@/pages/student/StudentDashboard'
+import { StudentCourseDetail } from '@/pages/student/StudentCourseDetail'
+import { StudentRepository } from '@/pages/student/StudentRepository'
+import { StudentNewQuery } from '@/pages/student/StudentNewQuery'
+import { StudentQueryDetail } from '@/pages/student/StudentQueryDetail'
+import { DemoModeBanner } from '@/components/dev/DemoModeBanner'
+import { AcceptInvitation } from '@/pages/AcceptInvitation'
+import { Chat } from '@/pages/Chat'
 import './App.css'
+
+// Routing: corporate recruiter/candidate paths unchanged; academic student flows under /student/* (prototype IA).
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Toaster position="top-right" richColors />
+        <DemoModeBanner />
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/accept-invitation" element={<AcceptInvitation />} />
           
           {/* Protected Routes - Dashboard */}
           <Route
@@ -35,6 +49,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             }
           />
@@ -157,6 +179,58 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CANDIDATO']}>
                 <EvaluationFeedback />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Student (academic) — Phase 5 demo, mock-first */}
+          <Route
+            path="/student/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ESTUDIANTE]}>
+                <StudentDemoGate>
+                  <StudentDashboard />
+                </StudentDemoGate>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/courses/:courseId"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ESTUDIANTE]}>
+                <StudentDemoGate>
+                  <StudentCourseDetail />
+                </StudentDemoGate>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/courses/:courseId/repository"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ESTUDIANTE]}>
+                <StudentDemoGate>
+                  <StudentRepository />
+                </StudentDemoGate>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/courses/:courseId/repository/new"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ESTUDIANTE]}>
+                <StudentDemoGate>
+                  <StudentNewQuery />
+                </StudentDemoGate>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/courses/:courseId/repository/q/:queryId"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ESTUDIANTE]}>
+                <StudentDemoGate>
+                  <StudentQueryDetail />
+                </StudentDemoGate>
               </ProtectedRoute>
             }
           />

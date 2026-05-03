@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { toast } from 'sonner'
 import { UserRole } from '@/types'
 import type { ApiError } from '@/types'
+import { authService } from '@/services/authService'
+import { getHomePathForRole } from '@/utils/authRedirects'
 
 export function Register() {
   const navigate = useNavigate()
@@ -62,10 +64,16 @@ export function Register() {
     
     setIsLoading(true)
     try {
-      const { confirmPassword, ...registerData } = formData
-      await register(registerData)
+      await register({
+        email: formData.email,
+        password: formData.password,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        rol: formData.rol,
+      })
       toast.success('Registration successful!')
-      navigate('/dashboard')
+      const u = authService.getUser()
+      navigate(u ? getHomePathForRole(u.rol) : '/dashboard')
     } catch (error) {
       const apiError = error as ApiError
       toast.error(apiError.message || 'Registration failed. Please try again.')
@@ -87,7 +95,7 @@ export function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Talent Pool</h1>
+          <h1 className="text-4xl font-bold text-primary-700 mb-2">Talent Pool</h1>
           <p className="text-gray-600">Create your account</p>
         </div>
         
@@ -145,7 +153,7 @@ export function Register() {
                   name="rol"
                   value={formData.rol}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
                 >
                   <option value={UserRole.CANDIDATO}>Candidate</option>
@@ -194,7 +202,7 @@ export function Register() {
                 Already have an account?{' '}
                 <Link
                   to="/login"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="font-medium text-teal-600 hover:text-teal-500"
                 >
                   Sign in
                 </Link>

@@ -35,7 +35,7 @@ The disconnect between academic training and the job market creates:
 
 ### Use Case Overview
 
-The platform implements **22 use cases** organized into 6 functional areas. The MVP (Phase 1) focuses on **11 critical use cases** for the hackathon demo:
+The platform implements **26 use cases** organized into functional areas. The MVP (Phase 1) focuses on **11 critical use cases** for the hackathon demo:
 
 #### Phase 1 - MVP (Critical Use Cases)
 
@@ -461,13 +461,13 @@ Configure in `Settings → Secrets and variables → Actions`:
 ## Documentation
 
 ### Product & Strategy
-- **[product/PRODUCT.md](product/PRODUCT.md)** - Complete product vision with all 22 use cases, user personas, and success metrics
+- **[product/PRODUCT.md](product/PRODUCT.md)** - Complete product vision with all use cases (UC-001–UC-026), user personas, and success metrics
 - **[product/ROADMAP.md](product/ROADMAP.md)** - Development phases with Definition of Done for each milestone
-- **[product/DATABASE.md](product/DATABASE.md)** - Complete 20-table schema organized in 7 domains with constraints and business rules
+- **[product/DATABASE.md](product/DATABASE.md)** - Complete 24-table schema organized in 7 domains with constraints and business rules
 
 ### Technical Architecture
 - **[product/ARCHITECTURE.md](product/ARCHITECTURE.md)** - Closed technical decisions, stack, folder structure, and patterns
-- **[docs/adr/](docs/adr/)** - Architecture Decision Records (ADR-0001: Stack, ADR-0002: RAG, ADR-0003: LLM Evals)
+- **[docs/adr/](docs/adr/)** - Architecture Decision Records (ADR-0001–0003: stack, RAG, LLM evals; ADR-0008: roadmap practice LLM cost allocation)
 - **[docs/uc/](docs/uc/)** - Detailed use case specifications with acceptance criteria and LLM considerations
 
 ### Development & Operations

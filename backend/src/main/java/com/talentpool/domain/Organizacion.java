@@ -33,6 +33,9 @@ public class Organizacion extends PanacheEntityBase {
   @Column(name = "logo_url", columnDefinition = "TEXT")
   public String logoUrl;
 
+  @Column(columnDefinition = "TEXT")
+  public String descripcion;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   public Instant createdAt;
 

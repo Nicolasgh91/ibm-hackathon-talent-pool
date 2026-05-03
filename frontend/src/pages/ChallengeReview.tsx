@@ -142,12 +142,12 @@ export function ChallengeReview() {
         </div>
 
         {regenerating && (
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-primary-50 border-primary-200">
             <CardContent className="py-4 flex items-center gap-3">
               <Spinner />
               <div>
-                <p className="font-semibold text-blue-900">Regenerating challenge...</p>
-                <p className="text-sm text-blue-700">This may take 15-30 seconds</p>
+                <p className="font-semibold text-primary-900">Regenerating challenge...</p>
+                <p className="text-sm text-primary-700">This may take 15-30 seconds</p>
               </div>
             </CardContent>
           </Card>
@@ -216,7 +216,7 @@ export function ChallengeReview() {
                   >
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-medium text-gray-900">{criterio.nombre}</h4>
-                      <span className="text-sm font-semibold text-blue-600">
+                      <span className="text-sm font-semibold text-primary-600">
                         Weight: {criterio.peso}%
                       </span>
                     </div>

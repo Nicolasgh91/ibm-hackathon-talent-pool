@@ -41,14 +41,14 @@ export function EvaluationFeedback() {
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-blue-600'
+    if (score >= 60) return 'text-primary-600'
     if (score >= 40) return 'text-yellow-600'
     return 'text-red-600'
   }
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return 'bg-green-100'
-    if (score >= 60) return 'bg-blue-100'
+    if (score >= 60) return 'bg-primary-100'
     if (score >= 40) return 'bg-yellow-100'
     return 'bg-red-100'
   }
@@ -84,15 +84,15 @@ export function EvaluationFeedback() {
 
         {/* Evaluating State */}
         {isEvaluating && (
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-primary-50 border-primary-200">
             <CardContent className="py-8">
               <div className="text-center space-y-4">
                 <Spinner size="lg" />
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                  <h3 className="text-lg font-semibold text-primary-900 mb-2">
                     Evaluation in Progress
                   </h3>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-primary-700">
                     AI is analyzing your code. This usually takes less than 10 seconds.
                   </p>
                 </div>
@@ -155,7 +155,7 @@ export function EvaluationFeedback() {
                         dimension.puntaje >= 80
                           ? 'bg-green-600'
                           : dimension.puntaje >= 60
-                          ? 'bg-blue-600'
+                          ? 'bg-primary-600'
                           : dimension.puntaje >= 40
                           ? 'bg-yellow-600'
                           : 'bg-red-600'
@@ -233,13 +233,13 @@ export function EvaluationFeedback() {
 
         {/* Next Steps */}
         {!isEvaluating && (
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-primary-50 border-primary-200">
             <CardContent className="py-4">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">💡</span>
                 <div className="text-sm">
-                  <p className="font-semibold text-blue-900 mb-1">What's Next?</p>
-                  <ul className="text-blue-800 space-y-1 list-disc list-inside">
+                  <p className="font-semibold text-primary-900 mb-1">What's Next?</p>
+                  <ul className="text-primary-800 space-y-1 list-disc list-inside">
                     <li>Review the feedback to understand your strengths and areas for improvement</li>
                     <li>Use this experience to improve your coding skills</li>
                     <li>Check for new challenge invitations</li>

@@ -2,11 +2,9 @@ package com.talentpool.service;
 
 import com.talentpool.api.dto.InviteCandidatesRequest;
 import com.talentpool.api.exception.InvalidInvitationException;
-import com.talentpool.api.exception.ResourceNotFoundException;
 import com.talentpool.domain.AsignacionDesafio;
 import com.talentpool.domain.Desafio;
 import com.talentpool.domain.InvitacionDesafio;
-import com.talentpool.domain.Puesto;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -51,10 +49,7 @@ public class InvitacionService {
    */
   @Transactional
   public List<InvitacionDesafio> inviteCandidates(
-      UUID desafioId,
-      InviteCandidatesRequest request,
-      UUID emisorId
-  ) {
+      UUID desafioId, InviteCandidatesRequest request, UUID emisorId) {
     LOG.infof("Inviting %d candidates to challenge %s", request.emails().size(), desafioId);
 
     // Validate challenge exists
@@ -68,29 +63,26 @@ public class InvitacionService {
     if (request.fechaApertura() != null) {
       asignacion.fechaApertura = request.fechaApertura();
     }
-    Instant fechaCierre = request.fechaCierre() != null ? request.fechaCierre() : request.expiraEn();
+    Instant fechaCierre =
+        request.fechaCierre() != null ? request.fechaCierre() : request.expiraEn();
     if (fechaCierre != null) {
       asignacion.fechaCierre = fechaCierre;
     }
     em.merge(asignacion);
 
     // Determine expiration date
-    Instant expiraEn = fechaCierre != null
-        ? fechaCierre
-        : request.expiraEn() != null
-        ? request.expiraEn()
-        : Instant.now().plus(defaultExpiryDays, ChronoUnit.DAYS);
+    Instant expiraEn =
+        fechaCierre != null
+            ? fechaCierre
+            : request.expiraEn() != null
+                ? request.expiraEn()
+                : Instant.now().plus(defaultExpiryDays, ChronoUnit.DAYS);
 
     // Create invitations
     List<InvitacionDesafio> invitaciones = new ArrayList<>();
     for (String email : request.emails()) {
       try {
-        InvitacionDesafio invitacion = createInvitation(
-            asignacion.id,
-            emisorId,
-            email,
-            expiraEn
-        );
+        InvitacionDesafio invitacion = createInvitation(asignacion.id, emisorId, email, expiraEn);
         invitaciones.add(invitacion);
 
         // Mock send email
@@ -156,15 +148,9 @@ public class InvitacionService {
     return String.format("%s/eval?token=%s", frontendBaseUrl, token);
   }
 
-  /**
-   * Create a single invitation.
-   */
+  /** Create a single invitation. */
   private InvitacionDesafio createInvitation(
-      UUID asignacionId,
-      UUID emisorId,
-      String email,
-      Instant expiraEn
-  ) {
+      UUID asignacionId, UUID emisorId, String email, Instant expiraEn) {
     InvitacionDesafio invitacion = new InvitacionDesafio();
     invitacion.asignacionId = asignacionId;
     invitacion.emisorUsuarioId = emisorId;
@@ -177,18 +163,17 @@ public class InvitacionService {
     return invitacion;
   }
 
-  /**
-   * Get or create assignment for a challenge.
-   */
+  /** Get or create assignment for a challenge. */
   private AsignacionDesafio getOrCreateAsignacion(UUID desafioId) {
     // Try to find existing assignment
-    AsignacionDesafio asignacion = em.createQuery(
-            "SELECT a FROM AsignacionDesafio a WHERE a.desafioId = :desafioId",
-            AsignacionDesafio.class)
-        .setParameter("desafioId", desafioId)
-        .getResultStream()
-        .findFirst()
-        .orElse(null);
+    AsignacionDesafio asignacion =
+        em.createQuery(
+                "SELECT a FROM AsignacionDesafio a WHERE a.desafioId = :desafioId",
+                AsignacionDesafio.class)
+            .setParameter("desafioId", desafioId)
+            .getResultStream()
+            .findFirst()
+            .orElse(null);
 
     if (asignacion == null) {
       // Create new assignment
@@ -204,24 +189,19 @@ public class InvitacionService {
     return asignacion;
   }
 
-  /**
-   * Generate a secure random token (64 characters).
-   */
+  /** Generate a secure random token (64 characters). */
   private String generateSecureToken() {
     byte[] bytes = new byte[48]; // 48 bytes = 64 base64 chars
     SECURE_RANDOM.nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
   }
 
-  /**
-   * Mock email sending (logs to console).
-   */
+  /** Mock email sending (logs to console). */
   private void mockSendEmail(String email, String token, String challengeTitle) {
     String url = String.format("%s/challenges/accept/%s", frontendBaseUrl, token);
     LOG.infof(
         "📧 [MOCK EMAIL] To: %s | Subject: Challenge Invitation - %s | URL: %s",
-        email, challengeTitle, url
-    );
+        email, challengeTitle, url);
   }
 }
 

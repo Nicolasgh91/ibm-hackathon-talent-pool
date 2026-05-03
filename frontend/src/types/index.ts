@@ -221,6 +221,34 @@ export type EvaluationStatus = (typeof EvaluationStatus)[keyof typeof Evaluation
 export interface SubmitSolutionRequest {
   asignacionId: string
   codigo: string
+  /** Backend POST /evaluations requires invitation token (from email link). */
+  invitationToken?: string
+  lenguaje?: string
+  minutosEmpleados?: number
+}
+
+/** Wire: GET /positions/:id/ranking (Quarkus JSON). */
+export interface PositionRankingWire {
+  puestoId: string
+  puestoTitulo: string
+  totalCandidatos: number
+  ranking: PositionRankingEntryWire[]
+}
+
+export interface PositionRankingEntryWire {
+  posicion: number
+  candidatoId: string
+  candidatoEmail: string
+  candidatoNombre: string
+  puntajeTotal: number | string
+  dimensiones: Array<{
+    nombre: string
+    puntaje: number | string
+    peso: number | string
+    justificacion?: string | null
+  }>
+  minutosEmpleados?: number | null
+  evaluadoEn?: string | null
 }
 
 // Ranking types
@@ -248,6 +276,26 @@ export interface SendMessageRequest {
 export interface ChatResponse {
   message: string
   timestamp: string
+}
+
+/** GET /invitations/by-token/:token (wire; includes asignacionId from backend) */
+export interface InvitationDetails {
+  invitacionId: string
+  asignacionId: string
+  emailInvitado: string
+  organizacion: string | null
+  estado: string
+  expiraEn: string
+  isValid: boolean
+  desafio: {
+    id: string
+    titulo: string
+    enunciado: string
+    tecnologia: string
+    seniority: string
+    minutosEstimados: number
+  }
+  puesto: { titulo: string; tecnologiaPrincipal: string; seniority: string } | null
 }
 
 // API Response types

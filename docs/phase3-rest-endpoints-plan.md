@@ -271,7 +271,9 @@ LOG.infof("📧 [MOCK EMAIL] To: %s | Subject: Challenge Invitation | Token: %s"
 ```java
 public record InvitationDetailsResponse(
     UUID invitacionId,
+    UUID asignacionId,
     String emailInvitado,
+    String organizacion,
     String estado,
     Instant expiraEn,
     boolean isValid,
